@@ -1,0 +1,52 @@
+{
+  "name": "generate-github-markdown-css",
+  "version": "0.0.0",
+  "description": "Generate the CSS for github-markdown-css",
+  "license": "MIT",
+  "repository": "sindresorhus/generate-github-markdown-css",
+  "author": {
+    "name": "Sindre Sorhus",
+    "email": "sindresorhus@gmail.com",
+    "url": "http://sindresorhus.com"
+  },
+  "bin": {
+    "github-markdown-css": "cli.js"
+  },
+  "contributors": [
+    {
+      "name": "Benjamin Tan",
+      "email": "demoneaux@gmail.com",
+      "url": "http://d10.github.io/"
+    }
+  ],
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "files": [
+    "index.js",
+    "cli.js"
+  ],
+  "keywords": [
+    "cli",
+    "bin",
+    "github",
+    "markdown",
+    "md",
+    "css",
+    "style",
+    "stylesheet"
+  ],
+  "dependencies": {
+    "cheerio": "^0.18.0",
+    "css": "^2.0.0",
+    "got": "^1.0.0",
+    "meow": "^2.0.0",
+    "uncss": "^0.9.0"
+  },
+  "devDependencies": {
+    "mocha": "*"
+  }
+}
