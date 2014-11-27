@@ -144,7 +144,9 @@ module.exports = function (cb) {
 
 			uncss(html, {
 				stylesheets: stylesheets,
-				ignore: [/^\.highlight/]
+				ignore: [
+					/^\.pl/ // GitHub code block syntax highlighting
+				]
 			}, function (err, css) {
 				if (err) {
 					throw err;
