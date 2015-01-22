@@ -44,7 +44,7 @@
     "css": "^2.0.0",
     "got": "^2.2.0",
     "meow": "^2.0.0",
-    "uncss": "^0.10.0"
+    "uncss": "^0.11.0"
   },
   "devDependencies": {
     "mocha": "*"
