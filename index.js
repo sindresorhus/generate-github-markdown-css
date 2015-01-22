@@ -53,7 +53,7 @@ function cleanupCss(str) {
 		}
 
 		if (el.type ==='rule') {
-			if (/::-webkit-validation|:-moz-placeholder|^\.integrations-slide-content|^\.prose-diff|@font-face|^button::|^article$|^.plan-chooser/.test(el.selectors[0])) {
+			if (/::-webkit-validation|:-moz-placeholder|^\.integrations-slide-content|^\.prose-diff|@font-face|^button::|^article$|^.plan-chooser|^.plan-notice/.test(el.selectors[0])) {
 				return false;
 			}
 
