@@ -7,7 +7,7 @@
   "author": {
     "name": "Sindre Sorhus",
     "email": "sindresorhus@gmail.com",
-    "url": "http://sindresorhus.com"
+    "url": "sindresorhus.com"
   },
   "bin": {
     "github-markdown-css": "cli.js"
@@ -30,6 +30,7 @@
     "cli.js"
   ],
   "keywords": [
+    "cli-app",
     "cli",
     "bin",
     "github",
