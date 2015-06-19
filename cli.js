@@ -7,7 +7,7 @@ meow({
 	help: [
 		'Usage',
 		'  github-markdown-css > <filename>'
-	].join('\n')
+	]
 });
 
 githubMarkdownCss(function (err, css) {
