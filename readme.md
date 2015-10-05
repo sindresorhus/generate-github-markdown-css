@@ -16,26 +16,26 @@ First a [rendered Markdown](fixture.md) with all possible syntax is fetched from
 ## Usage
 
 ```js
-var githubMarkdownCss = require('generate-github-markdown-css');
+const githubMarkdownCss = require('generate-github-markdown-css');
 
-githubMarkdownCss(function (err, css) {
+githubMarkdownCss((err, css) => {
 	console.log(css);
-	//=> .markdown-body { ...
+	//=> '.markdown-body { ...'
 });
 ```
 
 
 ## CLI
 
-```sh
+```
 $ npm install --global generate-github-markdown-css
 ```
 
-```sh
+```
 $ github-markdown-css --help
 
   Usage
-    github-markdown-css > <filename>
+    $ github-markdown-css > <filename>
 ```
 
 
