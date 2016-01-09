@@ -67,15 +67,15 @@ function cleanupCss(str) {
 				el.selectors.shift();
 			}
 
-      // rename the .octoicons font
-      if (el.selectors[0] === '.octicon') {
-        el.declarations = el.declarations.map(function (el) {
-          if (el.property === 'font') {
-            el.value += '-link';
-          }
-          return el;
-        });
-      }
+			// rename the .octoicons font
+			if (el.selectors[0] === '.octicon') {
+				el.declarations = el.declarations.map(function (el) {
+					if (el.property === 'font') {
+						el.value += '-link';
+					}
+					return el;
+				});
+			}
 
 			if (el.selectors.length === 1 && /^(?:html|body)$/.test(el.selectors[0])) {
 				el.declarations = el.declarations.filter(function (declaration) {
