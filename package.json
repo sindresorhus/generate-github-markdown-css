@@ -1,6 +1,6 @@
 {
   "name": "generate-github-markdown-css",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Generate the CSS for github-markdown-css",
   "license": "MIT",
   "repository": "sindresorhus/generate-github-markdown-css",
