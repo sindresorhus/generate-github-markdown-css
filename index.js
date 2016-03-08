@@ -13,7 +13,7 @@ function getCss(cb) {
 		var ret = [];
 		var $ = cheerio.load(data);
 
-		$('link[href*="assets/github"]').each(function (i, el) {
+		$('link[href$=".css"]').each(function (i, el) {
 			ret.push(el.attribs.href);
 		});
 
