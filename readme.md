@@ -18,7 +18,7 @@ First a [rendered Markdown](fixture.md) with all possible syntax is fetched from
 ```js
 const githubMarkdownCss = require('generate-github-markdown-css');
 
-githubMarkdownCss((err, css) => {
+githubMarkdownCss().then(css => {
 	console.log(css);
 	//=> '.markdown-body { ...'
 });
@@ -41,4 +41,4 @@ $ github-markdown-css --help
 
 ## License
 
-MIT © [Sindre Sorhus](http://sindresorhus.com)
+MIT © [Sindre Sorhus](https://sindresorhus.com)
