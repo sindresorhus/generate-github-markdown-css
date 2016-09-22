@@ -8,4 +8,4 @@ meow(`
 	  github-markdown-css > <filename>
 `);
 
-githubMarkdownCss().then(console.log);
+githubMarkdownCss().then(console.log).catch(err => console.log(err.stack));

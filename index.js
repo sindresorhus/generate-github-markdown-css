@@ -29,6 +29,7 @@ const getRenderedFixture = () => got(fixtureURL).then(response => {
 
 const cleanupCss = str => {
 	const css = require('css');
+
 	const style = css.parse(str);
 	const mdBodyProps = [];
 
@@ -38,7 +39,7 @@ const cleanupCss = str => {
 		}
 
 		if (el.type === 'rule') {
-			if (/::-webkit-validation|[:\-]placeholder$|^\.integrations-slide-content|^\.prose-diff|@font-face|^button::|^article$|^.plan-choice|^.plan-price|^.plan-notice|\.site-search/.test(el.selectors[0])) {
+			if (/::-webkit-validation|[:\-]placeholder$|^\.integrations-slide-content|^\.prose-diff|@font-face|^button::|^article$|^.plan-choice|^.plan-price|^.plan-notice|\.site-search|^::-webkit-file-upload-button$|^input::-webkit-outer-spin-button$/.test(el.selectors[0])) {
 				return false;
 			}
 
@@ -87,7 +88,7 @@ const cleanupCss = str => {
 			}
 		}
 
-		return el.declarations.length !== 0;
+		return el.declarations && el.declarations.length !== 0;
 	});
 
 	// merge `.markdown-body` rules
