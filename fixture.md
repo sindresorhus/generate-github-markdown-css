@@ -1,3 +1,22 @@
+## GitHub Markdown fixture
+
+
+### My fixtures
+
+#### Left-aligned image
+
+<img src="image.png" width="182" align="left">
+
+#### Right-aligned image
+
+<img src="image.png" width="182" align="right">
+
+
+
+---
+
+---
+
 Borrowed from https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet
 
 ---
