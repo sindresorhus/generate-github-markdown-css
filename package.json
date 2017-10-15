@@ -1,58 +1,54 @@
 {
-  "name": "generate-github-markdown-css",
-  "version": "2.1.0",
-  "description": "Generate the CSS for github-markdown-css",
-  "license": "MIT",
-  "repository": "sindresorhus/generate-github-markdown-css",
-  "author": {
-    "name": "Sindre Sorhus",
-    "email": "sindresorhus@gmail.com",
-    "url": "sindresorhus.com"
-  },
-  "bin": {
-    "github-markdown-css": "cli.js"
-  },
-  "contributors": [
-    {
-      "name": "Benjamin Tan",
-      "email": "demoneaux@gmail.com",
-      "url": "d10.github.io"
-    }
-  ],
-  "engines": {
-    "node": ">=4"
-  },
-  "scripts": {
-    "test": "xo && ava"
-  },
-  "files": [
-    "index.js",
-    "cli.js"
-  ],
-  "keywords": [
-    "cli-app",
-    "cli",
-    "bin",
-    "github",
-    "markdown",
-    "md",
-    "css",
-    "style",
-    "stylesheet"
-  ],
-  "dependencies": {
-    "cheerio": "^0.22.0",
-    "css": "^2.0.0",
-    "got": "^7.1.0",
-    "meow": "^3.3.0",
-    "pify": "^3.0.0",
-    "uncss": "^0.15.0"
-  },
-  "devDependencies": {
-    "ava": "*",
-    "xo": "*"
-  },
-  "xo": {
-    "esnext": true
-  }
+	"name": "generate-github-markdown-css",
+	"version": "2.1.0",
+	"description": "Generate the CSS for github-markdown-css",
+	"license": "MIT",
+	"repository": "sindresorhus/generate-github-markdown-css",
+	"author": {
+		"name": "Sindre Sorhus",
+		"email": "sindresorhus@gmail.com",
+		"url": "sindresorhus.com"
+	},
+	"contributors": [
+		{
+			"name": "Benjamin Tan",
+			"email": "demoneaux@gmail.com",
+			"url": "d10.github.io"
+		}
+	],
+	"bin": {
+		"github-markdown-css": "cli.js"
+	},
+	"engines": {
+		"node": ">=4"
+	},
+	"scripts": {
+		"test": "xo && ava"
+	},
+	"files": [
+		"index.js",
+		"cli.js"
+	],
+	"keywords": [
+		"cli-app",
+		"cli",
+		"github",
+		"markdown",
+		"md",
+		"css",
+		"style",
+		"stylesheet"
+	],
+	"dependencies": {
+		"cheerio": "^0.22.0",
+		"css": "^2.0.0",
+		"got": "^7.1.0",
+		"meow": "^3.3.0",
+		"pify": "^3.0.0",
+		"uncss": "^0.15.0"
+	},
+	"devDependencies": {
+		"ava": "*",
+		"xo": "*"
+	}
 }
