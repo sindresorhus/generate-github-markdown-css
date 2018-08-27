@@ -46,7 +46,7 @@ const cleanupCss = str => {
 		}
 
 		if (el.type === 'rule') {
-			if (/::-webkit-validation|[:-]placeholder$|^\.integrations-slide-content|^\.prose-diff|@font-face|^button::|^article$|^\.plan-|^\.plans-|^\.repo-config-option|\.site-search|^::-webkit-file-upload-button$|^input::-webkit-outer-spin-button$/.test(el.selectors[0])) {
+			if (/::-webkit-validation|[:-]placeholder$|^\.placeholder-box$|^\.integrations-slide-content|^\.prose-diff|@font-face|^button::|^article$|^\.plan-|^\.plans-|^\.repo-config-option|\.site-search|^::-webkit-file-upload-button$|^input::-webkit-outer-spin-button$/.test(el.selectors[0])) {
 				return false;
 			}
 
@@ -102,5 +102,5 @@ module.exports = () =>
 		getRenderedFixture(),
 		getCSS()
 	])
-	.then(x => uncssP(x[0], {stylesheets: x[1], ignore: [/^\.pl/]}))
+	.then(x => uncssP(x[0], {stylesheets: x[1], ignore: [/^\.pl|^\.tab-size/]}))
 	.then(cleanupCss);
