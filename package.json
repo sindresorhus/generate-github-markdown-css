@@ -1,6 +1,6 @@
 {
   "name": "generate-github-markdown-css",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "Generate the CSS for github-markdown-css",
   "license": "MIT",
   "repository": "sindresorhus/generate-github-markdown-css",
@@ -14,13 +14,17 @@
       "name": "Benjamin Tan",
       "email": "demoneaux@gmail.com",
       "url": "d10.github.io"
+    },
+    {
+      "name": "Piotr Kaminski",
+      "email": "piotr@ideanest.com"
     }
   ],
   "bin": {
     "github-markdown-css": "cli.js"
   },
   "engines": {
-    "node": ">=4"
+    "node": ">=8"
   },
   "scripts": {
     "test": "xo && ava"
@@ -42,10 +46,10 @@
   "dependencies": {
     "cheerio": "^0.22.0",
     "css": "^2.0.0",
-    "got": "^7.1.0",
-    "meow": "^3.3.0",
-    "pify": "^3.0.0",
-    "uncss": "^0.15.0"
+    "got": "^9.0.0",
+    "meow": "^5.0.0",
+    "pify": "^4.0.0",
+    "uncss": "^0.16.0"
   },
   "devDependencies": {
     "ava": "*",
