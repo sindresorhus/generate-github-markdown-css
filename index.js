@@ -4,6 +4,7 @@ const cheerio = require('cheerio');
 const uncss = require('uncss');
 const pify = require('pify');
 const fs = require('fs');
+const path = require('path');
 
 const uncssP = pify(uncss);
 
@@ -30,7 +31,7 @@ const getRenderedFixture = () => got.post('https://api.github.com/markdown', {
 	body: JSON.stringify({
 		mode: 'gfm',
 		context: 'sindresorhus/generate-github-markdown-css',
-		text: fs.readFileSync('./fixture.md', 'utf8')
+		text: fs.readFileSync(path.join(__dirname, 'fixture.md'), 'utf8')
 	})
 }).then(response => `<div class="markdown-body">\n${response.body}\n</div>`);
 
