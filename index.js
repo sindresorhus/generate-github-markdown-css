@@ -23,10 +23,14 @@ const getCSS = () => got('https://github.com').then(response => {
 });
 
 const getRenderedFixture = () => got.post('https://api.github.com/markdown', {
-	headers: {'Content-Type': 'application/json', 'User-Agent': 'generate-github-markdown-css'},
+	headers: {
+		'content-type': 'application/json',
+		'user-agent': 'generate-github-markdown-css'
+	},
 	body: JSON.stringify({
-		mode: 'gfm', context: 'sindresorhus/generate-github-markdown-css',
-		text: fs.readFileSync('./fixture.md').toString()
+		mode: 'gfm',
+		context: 'sindresorhus/generate-github-markdown-css',
+		text: fs.readFileSync('./fixture.md', 'utf8')
 	})
 }).then(response => `<div class="markdown-body">\n${response.body}\n</div>`);
 
