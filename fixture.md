@@ -1720,3 +1720,10 @@ Hr's:
 <hr class="foo" id="bar"/>
 
 <hr class="foo" id="bar" >
+
+
+
+<details>
+    <summary>My Example</summary>
+    Hello world
+</details>
