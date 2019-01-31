@@ -31,7 +31,8 @@
 	},
 	"files": [
 		"index.js",
-		"cli.js"
+		"cli.js",
+		"fixture.md"
 	],
 	"keywords": [
 		"cli-app",
