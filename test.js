@@ -1,6 +1,6 @@
 import test from 'ava';
-import m from '.';
+import generateCss from '.';
 
-test(async t => {
-	t.regex(await m(), /markdown-body/);
+test('main', async t => {
+	t.regex(await generateCss(), /markdown-body/);
 });

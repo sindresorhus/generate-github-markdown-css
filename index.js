@@ -1,19 +1,20 @@
 'use strict';
+const fs = require('fs');
+const path = require('path');
 const got = require('got');
 const cheerio = require('cheerio');
 const uncss = require('uncss');
 const pify = require('pify');
-const fs = require('fs');
-const path = require('path');
 
 const uncssP = pify(uncss);
 
-const getCSS = () => got('https://github.com').then(response => {
-	const ret = [];
-	const $ = cheerio.load(response.body);
+const getCSS = async () => {
+	const {body} = await got('https://github.com');
+	const $ = cheerio.load(body);
 
-	$('link[href$=".css"]').each((i, el) => {
-		ret.push(el.attribs.href);
+	const ret = [];
+	$('link[href$=".css"]').each((index, element) => {
+		ret.push(element.attribs.href);
 	});
 
 	if (ret.length === 0) {
@@ -21,19 +22,23 @@ const getCSS = () => got('https://github.com').then(response => {
 	}
 
 	return ret;
-});
+};
 
-const getRenderedFixture = () => got.post('https://api.github.com/markdown', {
-	headers: {
-		'content-type': 'application/json',
-		'user-agent': 'generate-github-markdown-css'
-	},
-	body: JSON.stringify({
-		mode: 'gfm',
-		context: 'sindresorhus/generate-github-markdown-css',
-		text: fs.readFileSync(path.join(__dirname, 'fixture.md'), 'utf8')
-	})
-}).then(response => `<div class="markdown-body">\n${response.body}\n</div>`);
+const getRenderedFixture = async () => {
+	const {body} = await got.post('https://api.github.com/markdown', {
+		headers: {
+			'content-type': 'application/json',
+			'user-agent': 'generate-github-markdown-css'
+		},
+		body: JSON.stringify({
+			mode: 'gfm',
+			context: 'sindresorhus/generate-github-markdown-css',
+			text: fs.readFileSync(path.join(__dirname, 'fixture.md'), 'utf8')
+		})
+	});
+
+	return `<div class="markdown-body">\n${body}\n</div>`;
+};
 
 const cleanupCss = str => {
 	const css = require('css');
@@ -98,10 +103,18 @@ const cleanupCss = str => {
 	return css.stringify(style);
 };
 
-module.exports = () =>
-	Promise.all([
+module.exports = async () => {
+	const [fixture, cssString] = await Promise.all([
 		getRenderedFixture(),
 		getCSS()
-	])
-	.then(x => uncssP(x[0], {stylesheets: x[1], ignore: [/^\.pl|^\.tab-size/]}))
-	.then(cleanupCss);
+	]);
+
+	const css = await uncssP(fixture, {
+		stylesheets: cssString,
+		ignore: [
+			/^\.pl|^\.tab-size/
+		]
+	});
+
+	return cleanupCss(css);
+};

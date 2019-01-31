@@ -1,58 +1,58 @@
 {
-  "name": "generate-github-markdown-css",
-  "version": "2.2.0",
-  "description": "Generate the CSS for github-markdown-css",
-  "license": "MIT",
-  "repository": "sindresorhus/generate-github-markdown-css",
-  "author": {
-    "name": "Sindre Sorhus",
-    "email": "sindresorhus@gmail.com",
-    "url": "sindresorhus.com"
-  },
-  "contributors": [
-    {
-      "name": "Benjamin Tan",
-      "email": "demoneaux@gmail.com",
-      "url": "d10.github.io"
-    },
-    {
-      "name": "Piotr Kaminski",
-      "email": "piotr@ideanest.com"
-    }
-  ],
-  "bin": {
-    "github-markdown-css": "cli.js"
-  },
-  "engines": {
-    "node": ">=8"
-  },
-  "scripts": {
-    "test": "xo && ava"
-  },
-  "files": [
-    "index.js",
-    "cli.js"
-  ],
-  "keywords": [
-    "cli-app",
-    "cli",
-    "github",
-    "markdown",
-    "md",
-    "css",
-    "style",
-    "stylesheet"
-  ],
-  "dependencies": {
-    "cheerio": "^0.22.0",
-    "css": "^2.0.0",
-    "got": "^9.0.0",
-    "meow": "^5.0.0",
-    "pify": "^4.0.0",
-    "uncss": "^0.16.0"
-  },
-  "devDependencies": {
-    "ava": "*",
-    "xo": "*"
-  }
+	"name": "generate-github-markdown-css",
+	"version": "2.2.0",
+	"description": "Generate the CSS for github-markdown-css",
+	"license": "MIT",
+	"repository": "sindresorhus/generate-github-markdown-css",
+	"author": {
+		"name": "Sindre Sorhus",
+		"email": "sindresorhus@gmail.com",
+		"url": "sindresorhus.com"
+	},
+	"contributors": [
+		{
+			"name": "Benjamin Tan",
+			"email": "demoneaux@gmail.com",
+			"url": "d10.github.io"
+		},
+		{
+			"name": "Piotr Kaminski",
+			"email": "piotr@ideanest.com"
+		}
+	],
+	"bin": {
+		"github-markdown-css": "cli.js"
+	},
+	"engines": {
+		"node": ">=8"
+	},
+	"scripts": {
+		"test": "xo && ava"
+	},
+	"files": [
+		"index.js",
+		"cli.js"
+	],
+	"keywords": [
+		"cli-app",
+		"cli",
+		"github",
+		"markdown",
+		"md",
+		"css",
+		"style",
+		"stylesheet"
+	],
+	"dependencies": {
+		"cheerio": "^0.22.0",
+		"css": "^2.0.0",
+		"got": "^9.0.0",
+		"meow": "^5.0.0",
+		"pify": "^4.0.0",
+		"uncss": "^0.16.0"
+	},
+	"devDependencies": {
+		"ava": "^1.2.0",
+		"xo": "^0.24.0"
+	}
 }
