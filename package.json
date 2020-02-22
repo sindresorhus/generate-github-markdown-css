@@ -4,27 +4,17 @@
 	"description": "Generate the CSS for github-markdown-css",
 	"license": "MIT",
 	"repository": "sindresorhus/generate-github-markdown-css",
+	"funding": "https://github.com/sponsors/sindresorhus",
 	"author": {
 		"name": "Sindre Sorhus",
 		"email": "sindresorhus@gmail.com",
-		"url": "sindresorhus.com"
+		"url": "https://sindresorhus.com"
 	},
-	"contributors": [
-		{
-			"name": "Benjamin Tan",
-			"email": "demoneaux@gmail.com",
-			"url": "d10.github.io"
-		},
-		{
-			"name": "Piotr Kaminski",
-			"email": "piotr@ideanest.com"
-		}
-	],
 	"bin": {
 		"github-markdown-css": "cli.js"
 	},
 	"engines": {
-		"node": ">=8"
+		"node": ">=10"
 	},
 	"scripts": {
 		"test": "xo && ava"
@@ -47,13 +37,13 @@
 	"dependencies": {
 		"cheerio": "^0.22.0",
 		"css": "^2.0.0",
-		"got": "^9.0.0",
-		"meow": "^5.0.0",
-		"pify": "^4.0.0",
-		"uncss": "^0.16.0"
+		"got": "^10.6.0",
+		"meow": "^6.0.1",
+		"pify": "^5.0.0",
+		"uncss": "^0.17.3"
 	},
 	"devDependencies": {
 		"ava": "^1.2.0",
-		"xo": "^0.24.0"
+		"xo": "^0.26.1"
 	}
 }

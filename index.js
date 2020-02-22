@@ -106,34 +106,34 @@ const cleanupCss = str => {
 	const css = require('css');
 
 	const style = css.parse(str);
-	const mdBodyProps = [];
+	const markdownBodyProperties = [];
 
-	style.stylesheet.rules = style.stylesheet.rules.filter(el => {
-		if (el.type === 'keyframes' || el.type === 'comment' || el.type === 'font-face') {
+	style.stylesheet.rules = style.stylesheet.rules.filter(element => {
+		if (element.type === 'keyframes' || element.type === 'comment' || element.type === 'font-face') {
 			return false;
 		}
 
-		if (el.type === 'rule') {
-			if (/::-webkit-validation|[:-]placeholder$|^\.placeholder-box$|^\.integrations-slide-content|^\.prose-diff|@font-face|^button::|^article$|^\.plan-|^\.plans-|^\.repo-config-option|\.site-search|^::-webkit-file-upload-button$|^input::-webkit-outer-spin-button$/.test(el.selectors[0])) {
+		if (element.type === 'rule') {
+			if (/::-webkit-validation|[:-]placeholder$|^\.placeholder-box$|^\.integrations-slide-content|^\.prose-diff|@font-face|^button::|^article$|^\.plan-|^\.plans-|^\.repo-config-option|\.site-search|^::-webkit-file-upload-button$|^input::-webkit-outer-spin-button$|^\.select-menu-item|^\.hx_SelectMenu-item--input/.test(element.selectors[0])) {
 				return false;
 			}
 
 			// Work around GitHub Markdown API inconsistency #10
-			if (el.selectors[0] === '.task-list-item-checkbox') {
-				el.selectors[0] = '.task-list-item input';
+			if (element.selectors[0] === '.task-list-item-checkbox') {
+				element.selectors[0] = '.task-list-item input';
 			}
 
 			// Remove `body` from `body, input {}`
-			if (el.selectors[0] === 'body' && el.selectors[1] === 'input') {
-				el.selectors.shift();
+			if (element.selectors[0] === 'body' && element.selectors[1] === 'input') {
+				element.selectors.shift();
 			}
 
-			if (el.selectors.length === 1 && /^(?:html|body)$/.test(el.selectors[0])) {
+			if (element.selectors.length === 1 && /^(?:html|body)$/.test(element.selectors[0])) {
 				// Remove everything from body/html other than these
-				el.declarations = el.declarations.filter(x => /^(?:line-height|color)$|text-size-adjust$/.test(x.property));
+				element.declarations = element.declarations.filter(x => /^(?:line-height|color)$|text-size-adjust$/.test(x.property));
 			}
 
-			el.selectors = el.selectors.map(selector => {
+			element.selectors = element.selectors.map(selector => {
 				if (/^(?:body|html)$/.test(selector)) {
 					selector = '.markdown-body';
 				}
@@ -146,20 +146,20 @@ const cleanupCss = str => {
 			});
 
 			// Collect `.markdown-body` rules
-			if (el.selectors.length === 1 && el.selectors[0] === '.markdown-body') {
-				[].push.apply(mdBodyProps, el.declarations);
+			if (element.selectors.length === 1 && element.selectors[0] === '.markdown-body') {
+				[].push.apply(markdownBodyProperties, element.declarations);
 				return false;
 			}
 		}
 
-		return el.declarations && el.declarations.length !== 0;
+		return element.declarations && element.declarations.length !== 0;
 	});
 
 	// Merge `.markdown-body` rules
 	style.stylesheet.rules.unshift({
 		type: 'rule',
 		selectors: ['.markdown-body'],
-		declarations: mdBodyProps
+		declarations: markdownBodyProperties
 	});
 
 	return css.stringify(style);
