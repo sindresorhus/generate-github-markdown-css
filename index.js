@@ -114,9 +114,12 @@ const cleanupCss = str => {
 		}
 
 		if (element.type === 'rule') {
-			if (/::-webkit-validation|[:-]placeholder$|^\.placeholder-box$|^\.integrations-slide-content|^\.prose-diff|@font-face|^button::|^article$|^\.plan-|^\.plans-|^\.repo-config-option|\.site-search|^::-webkit-file-upload-button$|^input::-webkit-outer-spin-button$|^\.select-menu-item|^\.hx_SelectMenu-item--input/.test(element.selectors[0])) {
+			if (/::-webkit-validation|[:-]placeholder$|^\.placeholder-box$|^\.integrations-slide-content|^\.prose-diff|@font-face|^button::|^article$|^\.plan-|^\.plans-|^\.repo-config-option|\.site-search|^::-webkit-file-upload-button$|^input::-webkit-outer-spin-button$|^\.select-menu-item|^\.hx_SelectMenu-item--input|\.HeaderMenu|\.emoji-picker|\.AvatarStack|\.hx_avatar|:focus\+|::-webkit-calendar|:checked\+\.radio-label-theme-discs|:checked\+\.hx_theme-toggle/.test(element.selectors[0])) {
 				return false;
 			}
+
+			// Remove unused color variables
+			element.declarations = element.declarations.filter(x => !/^--color-(?:scale|auto|btn|alert|autocomplete|blankslate|dropdown|input|avatar|toast|timeline|select|box|branch|menu|sidenav|header|filter|drag|upload|previewable|underlinenav|verified|social|tooltip|header|diffstat|mktg|files|hl|logo|discussion|actions|repo|code|global|calendar|footer|pr|topic|merge|project|checks|intro|marketing|workflow|discussions|bg-discussions|upvote|downvote|search|notifications|current-user|gist|profile|shadow|state|label|counter|fade)-/.test(x.property));
 
 			// Work around GitHub Markdown API inconsistency #10
 			if (element.selectors[0] === '.task-list-item-checkbox') {
