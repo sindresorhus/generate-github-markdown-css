@@ -1727,3 +1727,9 @@ Hr's:
     <summary>My Example</summary>
     Hello world
 </details>
+
+
+```diff
+-oldCode()
++newCode()
+```
