@@ -8,7 +8,7 @@ See [`github-markdown-css`](https://github.com/sindresorhus/github-markdown-css)
 
 ## How
 
-First a [rendered Markdown](fixture.md) with all possible syntax is fetched from GitHub. Then the GitHub.com CSS is fetched and both are run through [UnCSS](https://github.com/giakki/uncss), which extracts only the used styles, and then through a custom cleanup.
+First the GitHub.com CSS is fetched. Then we walk through all rules that could take effect in markdown content, and then do a custom cleanup. A [rendered Markdown](fixture.md) with all possible syntax is fetched from GitHub to check if we've done right.
 
 ## API
 
