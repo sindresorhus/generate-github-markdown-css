@@ -18,7 +18,7 @@
 		"node": ">=10"
 	},
 	"scripts": {
-		"test": "echo 1"
+		"test": "node test.js"
 	},
 	"files": [
 		"index.js",

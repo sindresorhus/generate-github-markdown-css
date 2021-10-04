@@ -1,6 +1,3 @@
-import test from 'ava';
-import generateCss from '.';
+import githubMarkdownCss from './index.js';
 
-test('main', async t => {
-	t.regex(await generateCss(), /markdown-body/);
-});
+await githubMarkdownCss();
