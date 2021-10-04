@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-'use strict';
-const meow = require('meow');
-const githubMarkdownCss = require('.');
+
+import meow from 'meow';
+import githubMarkdownCss from './index.js';
 
 meow(`
 	Usage
 	  github-markdown-css > <filename>
-`);
+`, {
+	importMeta: import.meta
+});
 
-(async () => {
-	console.log(await githubMarkdownCss());
-})();
+console.log(await githubMarkdownCss());

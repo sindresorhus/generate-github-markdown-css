@@ -10,6 +10,7 @@
 		"email": "sindresorhus@gmail.com",
 		"url": "https://sindresorhus.com"
 	},
+	"type": "module",
 	"bin": {
 		"github-markdown-css": "cli.js"
 	},
