@@ -13,12 +13,10 @@ First the GitHub.com CSS is fetched. Then we walk through all rules that could t
 ## API
 
 ```js
-const githubMarkdownCss = require('generate-github-markdown-css');
+import githubMarkdownCss from 'generate-github-markdown-css';
 
-(async () => {
-	console.log(await githubMarkdownCss());
-	//=> '.markdown-body { …'
-})();
+console.log(await githubMarkdownCss());
+//=> '.markdown-body { …'
 ```
 
 ## CLI
