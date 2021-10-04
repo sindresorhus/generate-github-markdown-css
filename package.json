@@ -17,7 +17,7 @@
 		"node": ">=10"
 	},
 	"scripts": {
-		"test": "xo && ava"
+		"test": "echo 1"
 	},
 	"files": [
 		"index.js",
@@ -35,15 +35,8 @@
 		"stylesheet"
 	],
 	"dependencies": {
-		"cheerio": "^0.22.0",
-		"css": "^2.0.0",
-		"got": "^10.6.0",
-		"meow": "^6.0.1",
-		"pify": "^5.0.0",
-		"uncss": "^0.17.3"
-	},
-	"devDependencies": {
-		"ava": "^1.2.0",
-		"xo": "^0.26.1"
+		"css": "^3.0.0",
+		"got": "^11.8.2",
+		"meow": "^10.1.1"
 	}
 }
