@@ -3,6 +3,10 @@ import path from 'node:path';
 import {log} from 'node:console';
 import got from 'got';
 
+export function zip(a, b) {
+	return a.map((element, i) => [element, b[i]]);
+}
+
 export function unique(array, by = null) {
 	const seen = new Set();
 	const returnValue = [];
@@ -61,6 +65,7 @@ export async function renderMarkdown() {
 	}
 
 	const text = fs.readFileSync('fixture.md', 'utf-8');
+	log('→', 'https://api.github.com/markdown');
 	const {body} = await got.post('https://api.github.com/markdown', {
 		json: {text},
 		headers: {
