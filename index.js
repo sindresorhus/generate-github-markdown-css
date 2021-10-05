@@ -1,27 +1,18 @@
 import css from 'css';
-import got from 'got';
-
-const id = x => x;
-
-function unique(array, by=id) {
-	let seen = new Set(), ret = [];
-	for (const a of array) {
-		let key = by(a)
-		if (!seen.has(key)) {
-			seen.add(key);
-			ret.push(a);
-		}
-	}
-	return ret;
-}
+import {unique, cachedGot, renderMarkdown} from './utils.js';
 
 async function getCSS() {
-	const {body} = await got('https://github.com');
+	const body = await cachedGot('https://github.com');
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
-	console.log(links);
+	for await (const cssText of links.map(url => cachedGot(url))) {
+		void cssText;
+	}
+
+	void css;
 }
 
 export default async function githubMarkdownCss() {
 	await getCSS();
+	await renderMarkdown();
 	return '';
 }

@@ -15,7 +15,7 @@
 		"github-markdown-css": "cli.js"
 	},
 	"engines": {
-		"node": ">=10"
+		"node": ">=14.8"
 	},
 	"scripts": {
 		"test": "node test.js"
@@ -39,5 +39,8 @@
 		"css": "^3.0.0",
 		"got": "^11.8.2",
 		"meow": "^10.1.1"
+	},
+	"devDependencies": {
+		"xo": "^0.45.0"
 	}
 }

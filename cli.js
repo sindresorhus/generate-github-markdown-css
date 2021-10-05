@@ -7,7 +7,9 @@ meow(`
 	Usage
 	  github-markdown-css > <filename>
 `, {
-	importMeta: import.meta
+	importMeta: import.meta,
 });
 
-console.log(await githubMarkdownCss());
+(async () => {
+	console.log(await githubMarkdownCss());
+})();
