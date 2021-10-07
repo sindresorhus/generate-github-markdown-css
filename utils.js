@@ -22,6 +22,12 @@ export function unique(array, by = null) {
 	return returnValue;
 }
 
+export function reverseUnique(array, by = null) {
+	array = [...array].reverse();
+	array = unique(array, by);
+	return array.reverse();
+}
+
 export function findCacheDir() {
 	const dir = 'node_modules/.cache/generate-github-markdown-css';
 	fs.mkdirSync(dir, {recursive: true});

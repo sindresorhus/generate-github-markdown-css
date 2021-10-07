@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import {renderMarkdown} from './utils.js';
 import githubMarkdownCss from './index.js';
 
 (async () => {
@@ -6,7 +7,7 @@ import githubMarkdownCss from './index.js';
 	fs.mkdirSync('dist', {recursive: true});
 	fs.writeFileSync('dist/github-markdown.css', css);
 
-	const fixture = fs.readFileSync('node_modules/.cache/generate-github-markdown-css/fixture.md.txt', 'utf-8');
+	const fixture = await renderMarkdown();
 	const html = `<!DOCTYPE html>
 <html>
 <head>

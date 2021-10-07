@@ -1,5 +1,11 @@
 import css from 'css';
-import {unique, cachedGot, renderMarkdown, zip} from './utils.js';
+import {unique, reverseUnique, cachedGot, zip} from './utils.js';
+
+function stringifyRule(rule) {
+	const selector = rule.selectors.join(',');
+	const body = rule.declarations.map(({property, value}) => `${property}: ${value}`).join(';');
+	return `${selector}{${body}}`;
+}
 
 function * walkRules(ast) {
 	if (ast.type === 'stylesheet') {
@@ -96,8 +102,9 @@ async function getCSS() {
 	const contents = await Promise.all(links.map(url => cachedGot(url)));
 
 	const colors = [];
-	const styles = {type: 'stylesheet', stylesheet: {rules: []}};
+	let rules = [];
 
+	// 1. roughly pick out styles
 	for (const [url, cssText] of zip(links, contents)) {
 		const [name] = url.match(/(?<=\/)\w+(?=-\w+\.css$)/);
 		const ast = css.parse(cssText);
@@ -105,16 +112,17 @@ async function getCSS() {
 		if (/^(light|dark)/.test(name)) {
 			extractColors(colors, name, ast);
 		} else {
-			extractStyles(styles.stylesheet.rules, ast);
+			extractStyles(rules, ast);
 		}
 	}
 
-	console.log(css.stringify(styles));
+	rules = reverseUnique(rules, stringifyRule);
+
+	// 2. pick out ..theme*=dark -> @media (prefers-color-scheme: dark)
+
+	// TODO
+
+	return css.stringify({type: 'stylesheet', stylesheet: {rules}});
 }
 
-export default async function githubMarkdownCss() {
-	await Promise.all([
-		getCSS(),
-		renderMarkdown(),
-	]);
-}
+export default getCSS;
