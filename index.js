@@ -29,9 +29,64 @@ function extractColors(colors, name, ast) {
 	}
 }
 
+// https://github.com/gjtorikian/html-pipeline/blob/main/lib/html/pipeline/sanitization_filter.rb
+const ALLOW_TAGS = `
+	h1 h2 h3 h4 h5 h6 h7 h8 br b i strong em a pre code img tt
+	div ins del sup sub p ol ul table thead tbody tfoot blockquote
+	dl dt dd kbd q samp var hr ruby rt rp li tr td th s strike summary
+	details caption figure figcaption
+	abbr bdo cite dfn mark small span time wbr
+	body html g-emoji
+`.trim().split(/\s+/);
+
+const ALLOW_CLASS = `
+	.anchor
+	.g-emoji
+	.highlight
+	.octicon
+	.octicon-link
+`.trim().split(/\s+/);
+
+function select(selector) {
+	if (selector.startsWith('.markdown-body')) {
+		if (selector.includes('zeroclipboard')) {
+			return false;
+		}
+
+		return true;
+	}
+
+	if (/^[:[\w]/.test(selector)) {
+		if (selector === '[hidden][hidden]') {
+			return false;
+		}
+
+		const tag = selector.match(/^\w[-\w]+/);
+		if (tag && !ALLOW_TAGS.includes(tag[0])) {
+			return false;
+		}
+
+		const klass = selector.match(/\.[-\w]+/);
+		if (klass && !ALLOW_CLASS.includes(klass[0])) {
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
 function extractStyles(styles, ast) {
 	for (const rule of walkRules(ast)) {
-		console.log(rule);
+		if (rule.declarations.some(({value}) => value.includes('prettylights'))) {
+			styles.push(rule);
+		} else {
+			rule.selectors = rule.selectors.filter(selector => select(selector));
+			if (rule.selectors.length > 0) {
+				styles.push(rule);
+			}
+		}
 	}
 }
 
@@ -41,7 +96,7 @@ async function getCSS() {
 	const contents = await Promise.all(links.map(url => cachedGot(url)));
 
 	const colors = [];
-	const styles = [];
+	const styles = {type: 'stylesheet', stylesheet: {rules: []}};
 
 	for (const [url, cssText] of zip(links, contents)) {
 		const [name] = url.match(/(?<=\/)\w+(?=-\w+\.css$)/);
@@ -50,14 +105,16 @@ async function getCSS() {
 		if (/^(light|dark)/.test(name)) {
 			extractColors(colors, name, ast);
 		} else {
-			extractStyles(styles, ast);
+			extractStyles(styles.stylesheet.rules, ast);
 		}
 	}
+
+	console.log(css.stringify(styles));
 }
 
 export default async function githubMarkdownCss() {
 	await Promise.all([
 		getCSS(),
-		renderMarkdown()
+		renderMarkdown(),
 	]);
 }

@@ -32,10 +32,10 @@ export const cachePath = findCacheDir();
 
 const MaxAge = 86_400 * 1000;
 
-function isCached(filename) {
+function isCached(filename, maxage = MaxAge) {
 	if (fs.existsSync(filename)) {
 		const age = Date.now() - fs.statSync(filename).mtime;
-		if (age < MaxAge) {
+		if (age < maxage) {
 			return true;
 		}
 	}
@@ -60,7 +60,7 @@ export async function cachedGot(url) {
 export async function renderMarkdown() {
 	const filename = cachePath('fixture.md.txt');
 
-	if (isCached(filename)) {
+	if (isCached(filename, MaxAge * 7)) {
 		return fs.readFileSync(filename, 'utf-8');
 	}
 
