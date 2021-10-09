@@ -250,7 +250,7 @@ function applyColors(colors, rules) {
 	return rules;
 }
 
-async function getCSS({light = 'light', dark = 'dark'} = {}) {
+async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 	const body = await cachedGot('https://github.com');
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
 	const contents = await Promise.all(links.map(url => cachedGot(url)));
@@ -267,6 +267,10 @@ async function getCSS({light = 'light', dark = 'dark'} = {}) {
 		} else {
 			extractStyles(rules, ast);
 		}
+	}
+
+	if (list) {
+		return colors.map(({name}) => name).join(', ');
 	}
 
 	rules = reverseUnique(rules, rule => {

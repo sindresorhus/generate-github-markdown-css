@@ -30,4 +30,13 @@ $ github-markdown-css --help
 
   Usage
     $ github-markdown-css > <filename>
+
+  Options
+    --light     Light theme
+    --dark      Dark theme
+    --list, -l  List available themes
+
+  Examples
+    $ github-markdown-css -l
+    light, dark, dark_dimmed, dark_high_contrast, dark_colorblind, light_colorblind
 ```
