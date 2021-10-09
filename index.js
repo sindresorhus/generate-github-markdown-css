@@ -1,12 +1,6 @@
 import css from 'css';
 import {unique, reverseUnique, cachedGot, zip} from './utils.js';
 
-function stringifyRule(rule) {
-	const selector = rule.selectors.join(',');
-	const body = rule.declarations.map(({property, value}) => `${property}: ${value}`).join(';');
-	return `${selector}{${body}}`;
-}
-
 function * walkRules(ast) {
 	if (ast.type === 'stylesheet') {
 		for (const rule of ast.stylesheet.rules) {
@@ -53,37 +47,37 @@ const ALLOW_CLASS = `
 	.octicon-link
 `.trim().split(/\s+/);
 
-function select(selector) {
-	if (selector.startsWith('.markdown-body')) {
-		if (selector.includes('zeroclipboard')) {
-			return false;
-		}
-
-		return true;
-	}
-
-	if (/^[:[\w]/.test(selector)) {
-		if (selector === '[hidden][hidden]') {
-			return false;
-		}
-
-		const tag = selector.match(/^\w[-\w]+/);
-		if (tag && !ALLOW_TAGS.includes(tag[0])) {
-			return false;
-		}
-
-		const klass = selector.match(/\.[-\w]+/);
-		if (klass && !ALLOW_CLASS.includes(klass[0])) {
-			return false;
-		}
-
-		return true;
-	}
-
-	return false;
-}
-
 function extractStyles(styles, ast) {
+	function select(selector) {
+		if (selector.startsWith('.markdown-body')) {
+			if (selector.includes('zeroclipboard')) {
+				return false;
+			}
+
+			return true;
+		}
+
+		if (/^[:[\w]/.test(selector)) {
+			if (selector === '[hidden][hidden]') {
+				return false;
+			}
+
+			const tag = selector.match(/^\w[-\w]+/);
+			if (tag && !ALLOW_TAGS.includes(tag[0])) {
+				return false;
+			}
+
+			const klass = selector.match(/\.[-\w]+/);
+			if (klass && !ALLOW_CLASS.includes(klass[0])) {
+				return false;
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
 	for (const rule of walkRules(ast)) {
 		if (rule.declarations.some(({value}) => value.includes('prettylights'))) {
 			styles.push(rule);
@@ -124,6 +118,10 @@ function classifyRules(rules) {
 
 		for (const rule of result) {
 			rule.declarations = reverseUnique(rule.declarations, declaration => declaration.property);
+
+			if (rule.selectors[0] === '.markdown-body') {
+				rule.declarations = rule.declarations.filter(declaration => !declaration.property.startsWith('--'));
+			}
 		}
 
 		return result;
@@ -170,12 +168,38 @@ async function getCSS() {
 		}
 	}
 
-	rules = reverseUnique(rules, stringifyRule);
+	rules = reverseUnique(rules, rule => {
+		const selector = rule.selectors.join(',');
+		const body = rule.declarations.map(({property, value}) => `${property}: ${value}`).join(';');
+		return `${selector}{${body}}`;
+	});
 
 	// 2. pick out light/dark declarations
-	let light;
-	let dark;
-	({rules, light, dark} = classifyRules(rules));
+	// let light;
+	// let dark;
+	({rules} = classifyRules(rules));
+
+	// Light = {
+	// 	type: 'media',
+	// 	media: '(prefers-color-scheme: light)',
+	// 	rules: [{
+	// 		type: 'rule',
+	// 		selectors: ['.markdown-body'],
+	// 		declarations: light,
+	// 	}],
+	// };
+
+	// dark = {
+	// 	type: 'media',
+	// 	media: '(prefers-color-scheme: dark)',
+	// 	rules: [{
+	// 		type: 'rule',
+	// 		selectors: ['.markdown-body'],
+	// 		declarations: dark,
+	// 	}],
+	// };
+
+	// rules = [light, dark, ...rules];
 
 	return css.stringify({type: 'stylesheet', stylesheet: {rules}});
 }
