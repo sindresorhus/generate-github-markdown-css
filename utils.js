@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import {log} from 'node:console';
 import got from 'got';
 
 export function zip(a, b) {
@@ -56,7 +55,6 @@ export async function cachedGot(url) {
 		return fs.readFileSync(filename, 'utf-8');
 	}
 
-	log('↓', url);
 	const {body} = await got(url);
 	fs.writeFileSync(filename, body);
 
@@ -71,7 +69,6 @@ export async function renderMarkdown() {
 	}
 
 	const text = fs.readFileSync('fixture.md', 'utf-8');
-	log('→', 'https://api.github.com/markdown');
 	const {body} = await got.post('https://api.github.com/markdown', {
 		json: {text},
 		headers: {
