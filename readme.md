@@ -15,7 +15,7 @@ First the GitHub.com CSS is fetched. Then we walk through all rules that could t
 ```js
 import githubMarkdownCss from 'generate-github-markdown-css';
 
-console.log(await githubMarkdownCss());
+console.log(await githubMarkdownCss({ light: 'light', dark: 'dark' }));
 //=> '.markdown-body { …'
 ```
 

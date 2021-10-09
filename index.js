@@ -30,22 +30,81 @@ function extractColors(colors, name, ast) {
 }
 
 // https://github.com/gjtorikian/html-pipeline/blob/main/lib/html/pipeline/sanitization_filter.rb
-const ALLOW_TAGS = `
-	h1 h2 h3 h4 h5 h6 h7 h8 br b i strong em a pre code img tt
-	div ins del sup sub p ol ul table thead tbody tfoot blockquote
-	dl dt dd kbd q samp var hr ruby rt rp li tr td th s strike summary
-	details caption figure figcaption
-	abbr bdo cite dfn mark small span time wbr
-	body html g-emoji
-`.trim().split(/\s+/);
+const ALLOW_TAGS = new Set([
+	'h1',
+	'h2',
+	'h3',
+	'h4',
+	'h5',
+	'h6',
+	'h7',
+	'h8',
+	'br',
+	'b',
+	'i',
+	'strong',
+	'em',
+	'a',
+	'pre',
+	'code',
+	'img',
+	'tt',
+	'div',
+	'ins',
+	'del',
+	'sup',
+	'sub',
+	'p',
+	'ol',
+	'ul',
+	'table',
+	'thead',
+	'tbody',
+	'tfoot',
+	'blockquote',
+	'dl',
+	'dt',
+	'dd',
+	'kbd',
+	'q',
+	'samp',
+	'var',
+	'hr',
+	'ruby',
+	'rt',
+	'rp',
+	'li',
+	'tr',
+	'td',
+	'th',
+	's',
+	'strike',
+	'summary',
+	'details',
+	'caption',
+	'figure',
+	'figcaption',
+	'abbr',
+	'bdo',
+	'cite',
+	'dfn',
+	'mark',
+	'small',
+	'span',
+	'time',
+	'wbr',
+	'body',
+	'html',
+	'g-emoji',
+]);
 
-const ALLOW_CLASS = `
-	.anchor
-	.g-emoji
-	.highlight
-	.octicon
-	.octicon-link
-`.trim().split(/\s+/);
+const ALLOW_CLASS = new Set([
+	'.anchor',
+	'.g-emoji',
+	'.highlight',
+	'.octicon',
+	'.octicon-link',
+]);
 
 function extractStyles(styles, ast) {
 	function select(selector) {
@@ -63,12 +122,12 @@ function extractStyles(styles, ast) {
 			}
 
 			const tag = selector.match(/^\w[-\w]+/);
-			if (tag && !ALLOW_TAGS.includes(tag[0])) {
+			if (tag && !ALLOW_TAGS.has(tag[0])) {
 				return false;
 			}
 
 			const klass = selector.match(/\.[-\w]+/);
-			if (klass && !ALLOW_CLASS.includes(klass[0])) {
+			if (klass && !ALLOW_CLASS.has(klass[0])) {
 				return false;
 			}
 
@@ -176,13 +235,14 @@ const manuallyAddedStyle = `
 function applyColors(colors, rules) {
 	for (const rule of rules) {
 		for (const declaration of rule.declarations) {
-			const match = /var\((.+?)\)/.exec(declaration.value);
+			const match = /var\((?<name>.+?)\)/.exec(declaration.value);
 			if (match) {
-				if (match[1] === '--color-text-primary') {
-					match[1] = '--color-fg-default';
+				let {name} = match.groups;
+				if (name === '--color-text-primary') {
+					name = '--color-fg-default';
 				}
 
-				declaration.value = declaration.value.replace(match[0], colors[match[1]]);
+				declaration.value = declaration.value.replace(match[0], colors[name]);
 			}
 		}
 	}
@@ -190,7 +250,7 @@ function applyColors(colors, rules) {
 	return rules;
 }
 
-async function getCSS() {
+async function getCSS({ light = 'light', dark = 'dark' } = {}) {
 	const body = await cachedGot('https://github.com');
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
 	const contents = await Promise.all(links.map(url => cachedGot(url)));
@@ -219,11 +279,9 @@ async function getCSS() {
 
 	// Colors: light,dark,dark_dimmed,dark_high_contrast,dark_colorblind,light_colorblind
 	// console.log(colors.map(e => e.name))
-	const light = 'light';
-	const dark = 'dark';
 
 	const usedVariables = new Set(rules.flatMap(rule => rule.declarations.flatMap(({value}) => {
-		let match = /var\((.+?)\)/.exec(value)?.[1];
+		let match = /var\((?<name>.+?)\)/.exec(value)?.groups.name;
 		if (match === '--color-text-primary') {
 			match = '--color-fg-default';
 		}

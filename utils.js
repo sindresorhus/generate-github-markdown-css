@@ -3,25 +3,25 @@ import path from 'node:path';
 import got from 'got';
 
 export function zip(a, b) {
-	return a.map((element, i) => [element, b[i]]);
+	return a.map((element, index) => [element, b[index]]);
 }
 
-export function unique(array, by = null) {
+export function unique(array, by) {
 	const seen = new Set();
 	const returnValue = [];
 
-	for (const a of array) {
-		const key = by ? by(a) : a;
+	for (const item of array) {
+		const key = by ? by(item) : item;
 		if (!seen.has(key)) {
 			seen.add(key);
-			returnValue.push(a);
+			returnValue.push(item);
 		}
 	}
 
 	return returnValue;
 }
 
-export function reverseUnique(array, by = null) {
+export function reverseUnique(array, by) {
 	array = [...array].reverse();
 	array = unique(array, by);
 	return array.reverse();
