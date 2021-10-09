@@ -148,6 +148,48 @@ function classifyRules(rules) {
 	return result;
 }
 
+const octicon = String.raw`\<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' version='1.1' aria-hidden='true'\>\<path fill-rule='evenodd' d='M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z'\>\<\/path\>\<\/svg\>`;
+
+const manuallyAddedStyle = `
+.markdown-body .octicon {
+  display: inline-block;
+  fill: currentColor;
+  vertical-align: text-bottom;
+}
+
+.markdown-body h1:hover .anchor .octicon-link:before,
+.markdown-body h2:hover .anchor .octicon-link:before,
+.markdown-body h3:hover .anchor .octicon-link:before,
+.markdown-body h4:hover .anchor .octicon-link:before,
+.markdown-body h5:hover .anchor .octicon-link:before,
+.markdown-body h6:hover .anchor .octicon-link:before {
+  width: 16px;
+  height: 16px;
+  content: ' ';
+  display: inline-block;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,${octicon}");
+  mask-image: url("data:image/svg+xml,${octicon}");
+}
+`;
+
+function applyColors(colors, rules) {
+	for (const rule of rules) {
+		for (const declaration of rule.declarations) {
+			const match = /var\((.+?)\)/.exec(declaration.value);
+			if (match) {
+				if (match[1] === '--color-text-primary') {
+					match[1] = '--color-fg-default';
+				}
+
+				declaration.value = declaration.value.replace(match[0], colors[match[1]]);
+			}
+		}
+	}
+
+	return rules;
+}
+
 async function getCSS() {
 	const body = await cachedGot('https://github.com');
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
@@ -179,6 +221,7 @@ async function getCSS() {
 	// console.log(colors.map(e => e.name))
 	const light = 'light';
 	const dark = 'dark';
+
 	const usedVariables = new Set(rules.flatMap(rule => rule.declarations.flatMap(({value}) => {
 		let match = /var\((.+?)\)/.exec(value)?.[1];
 		if (match === '--color-text-primary') {
@@ -188,31 +231,40 @@ async function getCSS() {
 		return match ? [match] : [];
 	})));
 
-	function filterColors(declarations, usedVariables) {
-		return declarations.filter(({property}) => usedVariables.has(property));
+	if (light === dark) {
+		rules = applyColors(colors[light], rules);
+	} else {
+		const filterColors = (declarations, usedVariables) => declarations.filter(({property}) => usedVariables.has(property));
+
+		rules.unshift({
+			type: 'media',
+			media: '(prefers-color-scheme: light)',
+			rules: [{
+				type: 'rule',
+				selectors: ['.markdown-body'],
+				declarations: filterColors(colors[light], usedVariables),
+			}],
+		});
+
+		rules.unshift({
+			type: 'media',
+			media: '(prefers-color-scheme: dark)',
+			rules: [{
+				type: 'rule',
+				selectors: ['.markdown-body'],
+				declarations: filterColors(colors[dark], usedVariables),
+			}],
+		});
 	}
 
-	rules.unshift({
-		type: 'media',
-		media: '(prefers-color-scheme: light)',
-		rules: [{
-			type: 'rule',
-			selectors: ['.markdown-body'],
-			declarations: filterColors(colors[light], usedVariables),
-		}],
-	});
+	let string = css.stringify({type: 'stylesheet', stylesheet: {rules}});
 
-	rules.unshift({
-		type: 'media',
-		media: '(prefers-color-scheme: dark)',
-		rules: [{
-			type: 'rule',
-			selectors: ['.markdown-body'],
-			declarations: filterColors(colors[dark], usedVariables),
-		}],
-	});
+	const rootBegin = string.indexOf('\n.markdown-body {');
+	const rootEnd = string.indexOf('}', rootBegin) + 2;
 
-	return css.stringify({type: 'stylesheet', stylesheet: {rules}});
+	string = string.slice(0, rootEnd) + manuallyAddedStyle + string.slice(rootEnd);
+
+	return string;
 }
 
 export default getCSS;
