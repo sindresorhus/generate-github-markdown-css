@@ -293,8 +293,15 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 		return match ? [match] : [];
 	})));
 
+	const colorSchemeLight = {type: 'declaration', property: 'color-scheme', value: 'light'};
+	const colorSchemeDark = {type: 'declaration', property: 'color-scheme', value: 'dark'};
+
 	if (light === dark) {
 		rules = applyColors(colors[light], rules);
+
+		if (light.startsWith('dark')) {
+			rules[0].declarations.unshift(colorSchemeDark);
+		}
 	} else {
 		const filterColors = (declarations, usedVariables) => declarations.filter(({property}) => usedVariables.has(property));
 
@@ -305,7 +312,7 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 				type: 'rule',
 				selectors: ['.markdown-body'],
 				declarations: [
-					{type: 'declaration', property: 'color-scheme', value: 'light'},
+					colorSchemeLight,
 					...filterColors(colors[light], usedVariables),
 				],
 			}],
@@ -318,7 +325,7 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 				type: 'rule',
 				selectors: ['.markdown-body'],
 				declarations: [
-					{type: 'declaration', property: 'color-scheme', value: 'dark'},
+					colorSchemeDark,
 					...filterColors(colors[dark], usedVariables),
 				],
 			}],
