@@ -156,7 +156,6 @@ async function getCSS() {
 	const colors = [];
 	let rules = [];
 
-	// 1. roughly pick out styles
 	for (const [url, cssText] of zip(links, contents)) {
 		const [name] = url.match(/(?<=\/)\w+(?=-\w+\.css$)/);
 		const ast = css.parse(cssText);
@@ -174,32 +173,44 @@ async function getCSS() {
 		return `${selector}{${body}}`;
 	});
 
-	// 2. pick out light/dark declarations
-	// let light;
-	// let dark;
 	({rules} = classifyRules(rules));
 
-	// Light = {
-	// 	type: 'media',
-	// 	media: '(prefers-color-scheme: light)',
-	// 	rules: [{
-	// 		type: 'rule',
-	// 		selectors: ['.markdown-body'],
-	// 		declarations: light,
-	// 	}],
-	// };
+	// Colors: light,dark,dark_dimmed,dark_high_contrast,dark_colorblind,light_colorblind
+	// console.log(colors.map(e => e.name))
+	const light = 'light';
+	const dark = 'dark';
+	const usedVariables = new Set(rules.flatMap(rule => rule.declarations.flatMap(({value}) => {
+		let match = /var\((.+?)\)/.exec(value)?.[1];
+		if (match === '--color-text-primary') {
+			match = '--color-fg-default';
+		}
 
-	// dark = {
-	// 	type: 'media',
-	// 	media: '(prefers-color-scheme: dark)',
-	// 	rules: [{
-	// 		type: 'rule',
-	// 		selectors: ['.markdown-body'],
-	// 		declarations: dark,
-	// 	}],
-	// };
+		return match ? [match] : [];
+	})));
 
-	// rules = [light, dark, ...rules];
+	function filterColors(declarations, usedVariables) {
+		return declarations.filter(({property}) => usedVariables.has(property));
+	}
+
+	rules.unshift({
+		type: 'media',
+		media: '(prefers-color-scheme: light)',
+		rules: [{
+			type: 'rule',
+			selectors: ['.markdown-body'],
+			declarations: filterColors(colors[light], usedVariables),
+		}],
+	});
+
+	rules.unshift({
+		type: 'media',
+		media: '(prefers-color-scheme: dark)',
+		rules: [{
+			type: 'rule',
+			selectors: ['.markdown-body'],
+			declarations: filterColors(colors[dark], usedVariables),
+		}],
+	});
 
 	return css.stringify({type: 'stylesheet', stylesheet: {rules}});
 }
