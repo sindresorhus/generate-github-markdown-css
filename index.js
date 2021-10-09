@@ -250,7 +250,7 @@ function applyColors(colors, rules) {
 	return rules;
 }
 
-async function getCSS({ light = 'light', dark = 'dark' } = {}) {
+async function getCSS({light = 'light', dark = 'dark'} = {}) {
 	const body = await cachedGot('https://github.com');
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
 	const contents = await Promise.all(links.map(url => cachedGot(url)));
@@ -300,7 +300,10 @@ async function getCSS({ light = 'light', dark = 'dark' } = {}) {
 			rules: [{
 				type: 'rule',
 				selectors: ['.markdown-body'],
-				declarations: filterColors(colors[light], usedVariables),
+				declarations: [
+					{type: 'declaration', property: 'color-scheme', value: 'light'},
+					...filterColors(colors[light], usedVariables),
+				],
 			}],
 		});
 
@@ -310,7 +313,10 @@ async function getCSS({ light = 'light', dark = 'dark' } = {}) {
 			rules: [{
 				type: 'rule',
 				selectors: ['.markdown-body'],
-				declarations: filterColors(colors[dark], usedVariables),
+				declarations: [
+					{type: 'declaration', property: 'color-scheme', value: 'dark'},
+					...filterColors(colors[dark], usedVariables),
+				],
 			}],
 		});
 	}
