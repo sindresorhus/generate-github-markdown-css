@@ -68,7 +68,7 @@ export async function renderMarkdown() {
 		return fs.readFileSync(filename, 'utf-8');
 	}
 
-	const text = fs.readFileSync(new URL("fixture.md", import.meta.url), 'utf-8');
+	const text = fs.readFileSync(new URL('fixture.md', import.meta.url), 'utf-8');
 	const {body} = await got.post('https://api.github.com/markdown', {
 		json: {text},
 		headers: {
