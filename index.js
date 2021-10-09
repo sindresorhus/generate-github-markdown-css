@@ -96,6 +96,60 @@ function extractStyles(styles, ast) {
 	}
 }
 
+function classifyRules(rules) {
+	function extractTheme(rule) {
+		for (const selector of rule.selectors) {
+			const match = /-theme\*=(\w+)/.exec(selector);
+			if (match) {
+				return match[1];
+			}
+		}
+
+		return undefined;
+	}
+
+	function mergeRules(rules) {
+		const result = [];
+		const selectorIndexMap = {};
+		for (const rule of rules) {
+			const selector = rule.selectors.join(',');
+			if (selector in selectorIndexMap) {
+				result[selectorIndexMap[selector]].declarations.push(...rule.declarations);
+			} else {
+				const index = result.length;
+				selectorIndexMap[selector] = index;
+				result.push(rule);
+			}
+		}
+
+		for (const rule of result) {
+			rule.declarations = reverseUnique(rule.declarations, declaration => declaration.property);
+		}
+
+		return result;
+	}
+
+	const result = {rules: [], light: [], dark: []};
+	for (const rule of rules) {
+		const theme = extractTheme(rule);
+		if (theme) {
+			result[extractTheme(rule)].push(...rule.declarations);
+		} else {
+			rule.selectors = rule.selectors.some(s => /^(:root|html|body|\[data-color-mode])$/.test(s))
+				? ['.markdown-body']
+				: rule.selectors.map(selector =>
+					selector.startsWith('.markdown-body') ? selector : '.markdown-body ' + selector,
+				);
+
+			result.rules.push(rule);
+		}
+	}
+
+	result.rules = mergeRules(result.rules);
+
+	return result;
+}
+
 async function getCSS() {
 	const body = await cachedGot('https://github.com');
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
@@ -118,9 +172,10 @@ async function getCSS() {
 
 	rules = reverseUnique(rules, stringifyRule);
 
-	// 2. pick out ..theme*=dark -> @media (prefers-color-scheme: dark)
-
-	// TODO
+	// 2. pick out light/dark declarations
+	let light;
+	let dark;
+	({rules, light, dark} = classifyRules(rules));
 
 	return css.stringify({type: 'stylesheet', stylesheet: {rules}});
 }
