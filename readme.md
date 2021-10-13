@@ -32,10 +32,10 @@ $ github-markdown-css --help
     $ github-markdown-css > <filename>
 
   Options
-	  --type      Theme name: 'light', 'dark', 'auto' or other --list values.
-	              'auto' means using the media query (prefers-color-scheme)
-	              to switch between the 'light' and 'dark' theme.
-	  --list      List available themes.
+    --type      Theme name: 'light', 'dark', 'auto' or other --list values.
+                'auto' means using the media query (prefers-color-scheme)
+                to switch between the 'light' and 'dark' theme.
+    --list      List available themes.
 
   Examples
     $ github-markdown-css --list
