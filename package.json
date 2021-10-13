@@ -12,8 +12,9 @@
 	},
 	"type": "module",
 	"bin": {
-		"github-markdown-css": "cli.js"
+		"github-markdown-css": "./cli.js"
 	},
+	"exports": "./index.js",
 	"engines": {
 		"node": ">=14.8"
 	},
@@ -23,6 +24,7 @@
 	"files": [
 		"index.js",
 		"cli.js",
+		"utilities.js",
 		"fixture.md"
 	],
 	"keywords": [

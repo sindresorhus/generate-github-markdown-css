@@ -8,7 +8,7 @@ See [`github-markdown-css`](https://github.com/sindresorhus/github-markdown-css)
 
 ## How
 
-First the GitHub.com CSS is fetched. Then we walk through all rules that could take effect in markdown content, and then do a custom cleanup. A [rendered Markdown](fixture.md) with all possible syntax is fetched from GitHub to check if we've done right.
+First the GitHub.com CSS is fetched. Then we walk through all rules that could take effect in Markdown content, and then do a custom cleanup. A [rendered Markdown](fixture.md) with all possible syntax is fetched from GitHub to check if we've done right.
 
 ## API
 
@@ -29,7 +29,7 @@ $ npm install --global generate-github-markdown-css
 $ github-markdown-css --help
 
   Usage
-    $ github-markdown-css > <filename>
+    github-markdown-css > <filename>
 
   Options
     --type      Theme name: 'light', 'dark', 'auto' or other --list values.

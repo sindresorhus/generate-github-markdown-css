@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import meow from 'meow';
 import githubMarkdownCss from './index.js';
 
@@ -21,7 +20,6 @@ const cli = meow(`
 	  dark_high_contrast
 	  dark_colorblind
 	  light_colorblind
-
 `, {
 	importMeta: import.meta,
 	flags: {

@@ -28,9 +28,9 @@ export function reverseUnique(array, by) {
 }
 
 export function findCacheDir() {
-	const dir = 'node_modules/.cache/generate-github-markdown-css';
-	fs.mkdirSync(dir, {recursive: true});
-	return (...args) => path.join(dir, ...args);
+	const directory = 'node_modules/.cache/generate-github-markdown-css';
+	fs.mkdirSync(directory, {recursive: true});
+	return (...arguments_) => path.join(directory, ...arguments_);
 }
 
 export const cachePath = findCacheDir();
@@ -52,7 +52,7 @@ export async function cachedGot(url) {
 	const filename = cachePath(path.basename(url) + '.txt');
 
 	if (isCached(filename)) {
-		return fs.readFileSync(filename, 'utf-8');
+		return fs.readFileSync(filename, 'utf8');
 	}
 
 	const {body} = await got(url);
@@ -65,10 +65,10 @@ export async function renderMarkdown() {
 	const filename = cachePath('fixture.md.txt');
 
 	if (isCached(filename, ONE_DAY_IN_MILLISECONDS * 7)) {
-		return fs.readFileSync(filename, 'utf-8');
+		return fs.readFileSync(filename, 'utf8');
 	}
 
-	const text = fs.readFileSync(new URL('fixture.md', import.meta.url), 'utf-8');
+	const text = fs.readFileSync(new URL('fixture.md', import.meta.url), 'utf8');
 	const {body} = await got.post('https://api.github.com/markdown', {
 		json: {text},
 		headers: {
@@ -76,6 +76,7 @@ export async function renderMarkdown() {
 			'User-Agent': 'Node.js',
 		},
 	});
+
 	fs.writeFileSync(filename, body);
 
 	return body;

@@ -1,5 +1,5 @@
 import css from 'css';
-import {unique, reverseUnique, cachedGot, zip} from './utils.js';
+import {unique, reverseUnique, cachedGot, zip} from './utilities.js';
 
 function * walkRules(ast) {
 	if (ast.type === 'stylesheet') {

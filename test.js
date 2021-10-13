@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import {renderMarkdown} from './utils.js';
+import {renderMarkdown} from './utilities.js';
 import githubMarkdownCss from './index.js';
 
 (async () => {
