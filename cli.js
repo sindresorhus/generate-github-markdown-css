@@ -9,7 +9,9 @@ const cli = meow(`
 
 	Options
 	  --type      Theme name: 'light', 'dark', 'auto' or other --list values.
-	  --list      List available themes
+	              'auto' means using the media query (prefers-color-scheme)
+	              to switch between the 'light' and 'dark' theme.
+	  --list      List available themes.
 
 	Examples
 	  $ github-markdown-css --list
