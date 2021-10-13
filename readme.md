@@ -8,17 +8,15 @@ See [`github-markdown-css`](https://github.com/sindresorhus/github-markdown-css)
 
 ## How
 
-First a [rendered Markdown](fixture.md) with all possible syntax is fetched from GitHub. Then the GitHub.com CSS is fetched and both are run through [UnCSS](https://github.com/giakki/uncss), which extracts only the used styles, and then through a custom cleanup.
+First the GitHub.com CSS is fetched. Then we walk through all rules that could take effect in markdown content, and then do a custom cleanup. A [rendered Markdown](fixture.md) with all possible syntax is fetched from GitHub to check if we've done right.
 
 ## API
 
 ```js
-const githubMarkdownCss = require('generate-github-markdown-css');
+import githubMarkdownCss from 'generate-github-markdown-css';
 
-(async () => {
-	console.log(await githubMarkdownCss());
-	//=> '.markdown-body { …'
-})();
+console.log(await githubMarkdownCss({ light: 'light', dark: 'dark' }));
+//=> '.markdown-body { …'
 ```
 
 ## CLI
@@ -32,4 +30,19 @@ $ github-markdown-css --help
 
   Usage
     $ github-markdown-css > <filename>
+
+  Options
+    --type      Theme name: 'light', 'dark', 'auto' or other --list values.
+                'auto' means using the media query (prefers-color-scheme)
+                to switch between the 'light' and 'dark' theme.
+    --list      List available themes.
+
+  Examples
+    $ github-markdown-css --list
+    light
+    dark
+    dark_dimmed
+    dark_high_contrast
+    dark_colorblind
+    light_colorblind
 ```

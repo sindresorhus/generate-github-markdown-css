@@ -1,58 +1,219 @@
-'use strict';
-const fs = require('fs');
-const path = require('path');
-const got = require('got');
-const cheerio = require('cheerio');
-const uncss = require('uncss');
-const pify = require('pify');
+import css from 'css';
+import {unique, reverseUnique, cachedGot, zip} from './utils.js';
 
-const uncssP = pify(uncss);
+function * walkRules(ast) {
+	if (ast.type === 'stylesheet') {
+		for (const rule of ast.stylesheet.rules) {
+			if (rule.type === 'rule') {
+				yield rule;
+			} else {
+				yield * walkRules(rule);
+			}
+		}
+	}
+	// ignore @media, etc.
+}
+
+function extractColors(colors, name, ast) {
+	colors[name] = Object.assign([], {name});
+	colors.push(colors[name]);
+
+	for (const rule of walkRules(ast)) {
+		for (const declaration of rule.declarations) {
+			if (declaration.type === 'declaration') {
+				const {property, value} = declaration;
+				colors[name][property] = value;
+				colors[name].push(declaration);
+			}
+		}
+	}
+}
+
+// https://github.com/gjtorikian/html-pipeline/blob/main/lib/html/pipeline/sanitization_filter.rb
+const ALLOW_TAGS = new Set([
+	'h1',
+	'h2',
+	'h3',
+	'h4',
+	'h5',
+	'h6',
+	'h7',
+	'h8',
+	'br',
+	'b',
+	'i',
+	'strong',
+	'em',
+	'a',
+	'pre',
+	'code',
+	'img',
+	'tt',
+	'div',
+	'ins',
+	'del',
+	'sup',
+	'sub',
+	'p',
+	'ol',
+	'ul',
+	'table',
+	'thead',
+	'tbody',
+	'tfoot',
+	'blockquote',
+	'dl',
+	'dt',
+	'dd',
+	'kbd',
+	'q',
+	'samp',
+	'var',
+	'hr',
+	'ruby',
+	'rt',
+	'rp',
+	'li',
+	'tr',
+	'td',
+	'th',
+	's',
+	'strike',
+	'summary',
+	'details',
+	'caption',
+	'figure',
+	'figcaption',
+	'abbr',
+	'bdo',
+	'cite',
+	'dfn',
+	'mark',
+	'small',
+	'span',
+	'time',
+	'wbr',
+	'body',
+	'html',
+	'g-emoji',
+]);
+
+const ALLOW_CLASS = new Set([
+	'.anchor',
+	'.g-emoji',
+	'.highlight',
+	'.octicon',
+	'.octicon-link',
+]);
+
+function extractStyles(styles, ast) {
+	function select(selector) {
+		if (selector.startsWith('.markdown-body')) {
+			if (selector.includes('zeroclipboard')) {
+				return false;
+			}
+
+			return true;
+		}
+
+		if (/^[:[\w]/.test(selector)) {
+			if (selector === '[hidden][hidden]') {
+				return false;
+			}
+
+			const tag = selector.match(/^\w[-\w]+/);
+			if (tag && !ALLOW_TAGS.has(tag[0])) {
+				return false;
+			}
+
+			const klass = selector.match(/\.[-\w]+/);
+			if (klass && !ALLOW_CLASS.has(klass[0])) {
+				return false;
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
+	for (const rule of walkRules(ast)) {
+		if (rule.declarations.some(({value}) => value.includes('prettylights'))) {
+			styles.push(rule);
+		} else {
+			rule.selectors = rule.selectors.filter(selector => select(selector));
+			if (rule.selectors.length > 0) {
+				styles.push(rule);
+			}
+		}
+	}
+}
+
+function classifyRules(rules) {
+	function extractTheme(rule) {
+		for (const selector of rule.selectors) {
+			const match = /-theme\*=(\w+)/.exec(selector);
+			if (match) {
+				return match[1];
+			}
+		}
+
+		return undefined;
+	}
+
+	function mergeRules(rules) {
+		const result = [];
+		const selectorIndexMap = {};
+		for (const rule of rules) {
+			const selector = rule.selectors.join(',');
+			if (selector in selectorIndexMap) {
+				result[selectorIndexMap[selector]].declarations.push(...rule.declarations);
+			} else {
+				const index = result.length;
+				selectorIndexMap[selector] = index;
+				result.push(rule);
+			}
+		}
+
+		for (const rule of result) {
+			rule.declarations = reverseUnique(rule.declarations, declaration => declaration.property);
+
+			if (rule.selectors[0] === '.markdown-body') {
+				rule.declarations = rule.declarations.filter(declaration => !declaration.property.startsWith('--'));
+			}
+		}
+
+		return result;
+	}
+
+	const result = {rules: [], light: [], dark: []};
+	for (const rule of rules) {
+		const theme = extractTheme(rule);
+		if (theme) {
+			result[extractTheme(rule)].push(...rule.declarations);
+		} else {
+			rule.selectors = rule.selectors.some(s => /^(:root|html|body|\[data-color-mode])$/.test(s))
+				? ['.markdown-body']
+				: rule.selectors.map(selector =>
+					selector.startsWith('.markdown-body') ? selector : '.markdown-body ' + selector,
+				);
+
+			result.rules.push(rule);
+		}
+	}
+
+	result.rules = mergeRules(result.rules);
+
+	return result;
+}
+
+const octicon = String.raw`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' version='1.1' aria-hidden='true'><path fill-rule='evenodd' d='M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z'></path></svg>`;
 
 const manuallyAddedStyle = `
 .markdown-body .octicon {
   display: inline-block;
   fill: currentColor;
   vertical-align: text-bottom;
-}
-
-.markdown-body .anchor {
-  float: left;
-  line-height: 1;
-  margin-left: -20px;
-  padding-right: 4px;
-}
-
-.markdown-body .anchor:focus {
-  outline: none;
-}
-
-.markdown-body h1 .octicon-link,
-.markdown-body h2 .octicon-link,
-.markdown-body h3 .octicon-link,
-.markdown-body h4 .octicon-link,
-.markdown-body h5 .octicon-link,
-.markdown-body h6 .octicon-link {
-  color: #1b1f23;
-  vertical-align: middle;
-  visibility: hidden;
-}
-
-.markdown-body h1:hover .anchor,
-.markdown-body h2:hover .anchor,
-.markdown-body h3:hover .anchor,
-.markdown-body h4:hover .anchor,
-.markdown-body h5:hover .anchor,
-.markdown-body h6:hover .anchor {
-  text-decoration: none;
-}
-
-.markdown-body h1:hover .anchor .octicon-link,
-.markdown-body h2:hover .anchor .octicon-link,
-.markdown-body h3:hover .anchor .octicon-link,
-.markdown-body h4:hover .anchor .octicon-link,
-.markdown-body h5:hover .anchor .octicon-link,
-.markdown-body h6:hover .anchor .octicon-link {
-  visibility: visible;
 }
 
 .markdown-body h1:hover .anchor .octicon-link:before,
@@ -65,121 +226,117 @@ const manuallyAddedStyle = `
   height: 16px;
   content: ' ';
   display: inline-block;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' version='1.1' width='16' height='16' aria-hidden='true'%3E%3Cpath fill-rule='evenodd' d='M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z'%3E%3C/path%3E%3C/svg%3E");
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,${octicon}");
+  mask-image: url("data:image/svg+xml,${octicon}");
 }
+`;
 
-`.trim();
+function applyColors(colors, rules) {
+	for (const rule of rules) {
+		for (const declaration of rule.declarations) {
+			const match = /var\((?<name>.+?)\)/.exec(declaration.value);
+			if (match) {
+				let {name} = match.groups;
+				if (name === '--color-text-primary') {
+					name = '--color-fg-default';
+				}
 
-const getCSS = async () => {
-	const {body} = await got('https://github.com');
-	const $ = cheerio.load(body);
-
-	const ret = [];
-	$('link[href$=".css"]').each((index, element) => {
-		ret.push(element.attribs.href);
-	});
-
-	if (ret.length === 0) {
-		throw new Error('Could not find GitHub stylesheets');
+				declaration.value = declaration.value.replace(match[0], colors[name]);
+			}
+		}
 	}
 
-	return ret;
-};
+	return rules;
+}
 
-const getRenderedFixture = async () => {
-	const {body} = await got.post('https://api.github.com/markdown', {
-		headers: {
-			'content-type': 'application/json',
-			'user-agent': 'generate-github-markdown-css'
-		},
-		body: JSON.stringify({
-			mode: 'gfm',
-			context: 'sindresorhus/generate-github-markdown-css',
-			text: fs.readFileSync(path.join(__dirname, 'fixture.md'), 'utf8')
-		})
+async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
+	const body = await cachedGot('https://github.com');
+	const links = unique(body.match(/(?<=href=").+?\.css/g));
+	const contents = await Promise.all(links.map(url => cachedGot(url)));
+
+	const colors = [];
+	let rules = [];
+
+	for (const [url, cssText] of zip(links, contents)) {
+		const [name] = url.match(/(?<=\/)\w+(?=-\w+\.css$)/);
+		const ast = css.parse(cssText);
+
+		if (/^(light|dark)/.test(name)) {
+			extractColors(colors, name, ast);
+		} else {
+			extractStyles(rules, ast);
+		}
+	}
+
+	if (list) {
+		return colors.map(({name}) => name).join('\n');
+	}
+
+	rules = reverseUnique(rules, rule => {
+		const selector = rule.selectors.join(',');
+		const body = rule.declarations.map(({property, value}) => `${property}: ${value}`).join(';');
+		return `${selector}{${body}}`;
 	});
 
-	return `<div class="markdown-body">\n${body}\n</div>`;
-};
+	({rules} = classifyRules(rules));
 
-const cleanupCss = str => {
-	const css = require('css');
-
-	const style = css.parse(str);
-	const markdownBodyProperties = [];
-
-	style.stylesheet.rules = style.stylesheet.rules.filter(element => {
-		if (element.type === 'keyframes' || element.type === 'comment' || element.type === 'font-face') {
-			return false;
+	const usedVariables = new Set(rules.flatMap(rule => rule.declarations.flatMap(({value}) => {
+		let match = /var\((?<name>.+?)\)/.exec(value)?.groups.name;
+		if (match === '--color-text-primary') {
+			match = '--color-fg-default';
 		}
 
-		if (element.type === 'rule') {
-			if (/::-webkit-validation|[:-]placeholder$|^\.placeholder-box$|^\.integrations-slide-content|^\.prose-diff|@font-face|^button::|^article$|^\.plan-|^\.plans-|^\.repo-config-option|\.site-search|^::-webkit-file-upload-button$|^input::-webkit-outer-spin-button$|^\.select-menu-item|^\.hx_SelectMenu-item--input|\.HeaderMenu|\.emoji-picker|\.AvatarStack|\.hx_avatar|:focus\+|::-webkit-calendar|:checked\+\.radio-label-theme-discs|:checked\+\.hx_theme-toggle/.test(element.selectors[0])) {
-				return false;
-			}
+		return match ? [match] : [];
+	})));
 
-			// Remove unused color variables
-			element.declarations = element.declarations.filter(x => !/^--color-(?:scale|auto|btn|alert|autocomplete|blankslate|dropdown|input|avatar|toast|timeline|select|box|branch|menu|sidenav|header|filter|drag|upload|previewable|underlinenav|verified|social|tooltip|header|diffstat|mktg|files|hl|logo|discussion|actions|repo|code|global|calendar|footer|pr|topic|merge|project|checks|intro|marketing|workflow|discussions|bg-discussions|upvote|downvote|search|notifications|current-user|gist|profile|shadow|state|label|counter|fade)-/.test(x.property));
+	const colorSchemeLight = {type: 'declaration', property: 'color-scheme', value: 'light'};
+	const colorSchemeDark = {type: 'declaration', property: 'color-scheme', value: 'dark'};
 
-			// Work around GitHub Markdown API inconsistency #10
-			if (element.selectors[0] === '.task-list-item-checkbox') {
-				element.selectors[0] = '.task-list-item input';
-			}
+	if (light === dark) {
+		rules = applyColors(colors[light], rules);
 
-			// Remove `body` from `body, input {}`
-			if (element.selectors[0] === 'body' && element.selectors[1] === 'input') {
-				element.selectors.shift();
-			}
-
-			if (element.selectors.length === 1 && /^(?:html|body)$/.test(element.selectors[0])) {
-				// Remove everything from body/html other than these
-				element.declarations = element.declarations.filter(x => /^(?:line-height|color)$|text-size-adjust$/.test(x.property));
-			}
-
-			element.selectors = element.selectors.map(selector => {
-				if (/^(?:body|html)$/.test(selector)) {
-					selector = '.markdown-body';
-				}
-
-				if (!/\.markdown-body/.test(selector)) {
-					selector = `.markdown-body ${selector}`;
-				}
-
-				return selector;
-			});
-
-			// Collect `.markdown-body` rules
-			if (element.selectors.length === 1 && element.selectors[0] === '.markdown-body') {
-				[].push.apply(markdownBodyProperties, element.declarations);
-				return false;
-			}
+		if (light.startsWith('dark')) {
+			rules[0].declarations.unshift(colorSchemeDark);
 		}
+	} else {
+		const filterColors = (declarations, usedVariables) => declarations.filter(({property}) => usedVariables.has(property));
 
-		return element.declarations && element.declarations.length !== 0;
-	});
+		rules.unshift({
+			type: 'media',
+			media: '(prefers-color-scheme: light)',
+			rules: [{
+				type: 'rule',
+				selectors: ['.markdown-body'],
+				declarations: [
+					light.startsWith('dark') ? colorSchemeDark : colorSchemeLight,
+					...filterColors(colors[light], usedVariables),
+				],
+			}],
+		});
 
-	// Merge `.markdown-body` rules
-	style.stylesheet.rules.unshift({
-		type: 'rule',
-		selectors: ['.markdown-body'],
-		declarations: markdownBodyProperties
-	});
+		rules.unshift({
+			type: 'media',
+			media: '(prefers-color-scheme: dark)',
+			rules: [{
+				type: 'rule',
+				selectors: ['.markdown-body'],
+				declarations: [
+					dark.startsWith('light') ? colorSchemeLight : colorSchemeDark,
+					...filterColors(colors[dark], usedVariables),
+				],
+			}],
+		});
+	}
 
-	return css.stringify(style);
-};
+	let string = css.stringify({type: 'stylesheet', stylesheet: {rules}});
 
-module.exports = async () => {
-	const [fixture, cssString] = await Promise.all([
-		getRenderedFixture(),
-		getCSS()
-	]);
+	const rootBegin = string.indexOf('\n.markdown-body {');
+	const rootEnd = string.indexOf('}', rootBegin) + 2;
 
-	const css = await uncssP(fixture, {
-		stylesheets: cssString,
-		ignore: [
-			/^\.pl|^\.tab-size/
-		]
-	});
+	string = string.slice(0, rootEnd) + manuallyAddedStyle + string.slice(rootEnd);
 
-	return manuallyAddedStyle + cleanupCss(css);
-};
+	return string;
+}
+
+export default getCSS;
