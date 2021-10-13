@@ -36,6 +36,11 @@ $ github-markdown-css --help
     --list      List available themes
 
   Examples
-    $ github-markdown-css -l
-    light, dark, dark_dimmed, dark_high_contrast, dark_colorblind, light_colorblind
+    $ github-markdown-css --list
+    light
+    dark
+    dark_dimmed
+    dark_high_contrast
+    dark_colorblind
+    light_colorblind
 ```
