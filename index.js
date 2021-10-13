@@ -270,7 +270,7 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 	}
 
 	if (list) {
-		return colors.map(({name}) => name).join(', ');
+		return colors.map(({name}) => name).join('\n');
 	}
 
 	rules = reverseUnique(rules, rule => {

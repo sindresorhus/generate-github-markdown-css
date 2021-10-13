@@ -8,30 +8,39 @@ const cli = meow(`
 	  github-markdown-css > <filename>
 
 	Options
-	  --light     Light theme
-	  --dark      Dark theme
-	  --list, -l  List available themes
+	  --type      Theme name: 'light', 'dark', 'auto' or other --list values.
+	  --list      List available themes
 
 	Examples
-	  $ github-markdown-css -l
-	  light, dark, dark_dimmed, dark_high_contrast, dark_colorblind, light_colorblind
+	  $ github-markdown-css --list
+	  light
+	  dark
+	  dark_dimmed
+	  dark_high_contrast
+	  dark_colorblind
+	  light_colorblind
 
 `, {
 	importMeta: import.meta,
 	flags: {
-		light: {
-			type: 'string',
-		},
-		dark: {
+		type: {
 			type: 'string',
 		},
 		list: {
 			type: 'boolean',
-			alias: 'l',
 		},
 	},
 });
 
 (async () => {
-	console.log(await githubMarkdownCss(cli.flags));
+	const {type, list} = cli.flags;
+
+	let light = type;
+	let dark = type;
+	if (type === 'auto') {
+		light = 'light';
+		dark = 'dark';
+	}
+
+	console.log(await githubMarkdownCss({light, dark, list}));
 })();

@@ -32,9 +32,8 @@ $ github-markdown-css --help
     $ github-markdown-css > <filename>
 
   Options
-    --light     Light theme
-    --dark      Dark theme
-    --list, -l  List available themes
+    --type     	Theme name: 'light', 'dark', 'auto' or other --list values.
+    --list      List available themes
 
   Examples
     $ github-markdown-css -l
