@@ -138,7 +138,7 @@ function extractStyles(styles, ast) {
 			return true;
 		}
 
-		const klass = selector.match(/\.[-\w]+/);
+		const klass = selector.match(/^\.[-\w]+/);
 		if (klass) {
 			return ALLOW_CLASS.has(klass[0]);
 		}
@@ -146,11 +146,21 @@ function extractStyles(styles, ast) {
 		return false;
 	}
 
+	function fix(selector) {
+		if (selector.startsWith('html ') || selector.startsWith('body ')) {
+			return selector.slice(5);
+		}
+
+		return selector;
+	}
+
 	for (const rule of walkRules(ast)) {
 		if (rule.declarations.some(({value}) => value.includes('prettylights'))) {
 			styles.push(rule);
 		} else {
-			rule.selectors = rule.selectors.filter(selector => select(selector));
+			rule.selectors = rule.selectors
+				.filter(selector => select(selector))
+				.map(selector => fix(selector));
 			if (rule.selectors.length > 0) {
 				styles.push(rule);
 			}

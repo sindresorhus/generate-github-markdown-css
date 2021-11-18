@@ -1733,3 +1733,7 @@ Hr's:
 -oldCode()
 +newCode()
 ```
+
+footnotes[^1].
+
+[^1]: hello world!.
