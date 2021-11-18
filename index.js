@@ -96,6 +96,7 @@ const ALLOW_TAGS = new Set([
 	'body',
 	'html',
 	'g-emoji',
+	'input', // [type=checkbox], for task list
 ]);
 
 const ALLOW_CLASS = new Set([
@@ -104,6 +105,9 @@ const ALLOW_CLASS = new Set([
 	'.highlight',
 	'.octicon',
 	'.octicon-link',
+	'.contains-task-list',
+	'.task-list-item',
+	'.task-list-item-checkbox',
 ]);
 
 function extractStyles(styles, ast) {
@@ -132,6 +136,11 @@ function extractStyles(styles, ast) {
 			}
 
 			return true;
+		}
+
+		const klass = selector.match(/\.[-\w]+/);
+		if (klass) {
+			return ALLOW_CLASS.has(klass[0]);
 		}
 
 		return false;
@@ -259,7 +268,12 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 	let rules = [];
 
 	for (const [url, cssText] of zip(links, contents)) {
-		const [name] = url.match(/(?<=\/)\w+(?=-\w+\.css$)/);
+		const match = url.match(/(?<=\/)\w+(?=-\w+\.css$)/);
+		if (!match) {
+			continue;
+		}
+
+		const [name] = match;
 		const ast = css.parse(cssText);
 
 		if (/^(light|dark)/.test(name)) {
