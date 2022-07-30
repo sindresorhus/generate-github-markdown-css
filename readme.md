@@ -28,21 +28,26 @@ $ npm install --global generate-github-markdown-css
 ```
 $ github-markdown-css --help
 
-  Usage
-    github-markdown-css > <filename>
+	Usage
+	  github-markdown-css > <filename>
 
-  Options
-    --type      Theme name: 'light', 'dark', 'auto' or other --list values.
-                'auto' means using the media query (prefers-color-scheme)
-                to switch between the 'light' and 'dark' theme.
-    --list      List available themes.
+	Options
+	  --theme, -t     Theme name: 'light', 'dark', 'all' or other --list values.
+	              	  The media query (prefers-color-scheme) is available
+	              	  to switch between all the differents themes chosen.
+	  --list      	  List available themes.
+	  --defaultTheme  Omit the media query (prefers-color-scheme) when using a single theme.
+	  --help      	  Show help.
+	  --version   	  Show version.
 
-  Examples
-    $ github-markdown-css --list
-    light
-    dark
-    dark_dimmed
-    dark_high_contrast
-    dark_colorblind
-    light_colorblind
+	Examples
+	  $ github-markdown-css --list
+	  light
+	  dark
+	  dark_dimmed
+	  dark_high_contrast
+	  dark_colorblind
+	  light_colorblind
+
+	  $ github-markdown-css -t light -t dark > example.css
 ```

@@ -269,7 +269,7 @@ function applyColors(colors, rules) {
 	return rules;
 }
 
-async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
+async function getCSS({themes = ['all'], list = false, defaultTheme = false} = {}) {
 	const body = await cachedGot('https://github.com');
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
 	const contents = await Promise.all(links.map(url => cachedGot(url)));
@@ -297,6 +297,18 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 		return colors.map(({name}) => name).join('\n');
 	}
 
+	if (themes.includes('all')) {
+		themes = colors.map(({name}) => name);
+	}
+
+	themes.every(theme => {
+		if (!colors[theme]) {
+			throw new Error(`No colors found for theme ${theme}`);
+		}
+
+		return true;
+	});
+
 	rules = reverseUnique(rules, rule => {
 		const selector = rule.selectors.join(',');
 		const body = rule.declarations.map(({property, value}) => `${property}: ${value}`).join(';');
@@ -314,43 +326,33 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 		return match ? [match] : [];
 	})));
 
-	const colorSchemeLight = {type: 'declaration', property: 'color-scheme', value: 'light'};
-	const colorSchemeDark = {type: 'declaration', property: 'color-scheme', value: 'dark'};
+	if (themes.length === 1) {
+		const theme = themes[0];
 
-	if (light === dark) {
-		rules = applyColors(colors[light], rules);
+		rules = applyColors(colors[theme], rules);
 
-		if (light.startsWith('dark')) {
-			rules[0].declarations.unshift(colorSchemeDark);
+		if (!defaultTheme) {
+			rules[0].declarations.unshift({type: 'declaration', property: 'color-scheme', value: theme});
 		}
 	} else {
 		const filterColors = (declarations, usedVariables) => declarations.filter(({property}) => usedVariables.has(property));
 
-		rules.unshift({
-			type: 'media',
-			media: '(prefers-color-scheme: light)',
-			rules: [{
-				type: 'rule',
-				selectors: ['.markdown-body'],
-				declarations: [
-					light.startsWith('dark') ? colorSchemeDark : colorSchemeLight,
-					...filterColors(colors[light], usedVariables),
-				],
-			}],
-		});
+		for (const theme of themes) {
+			const colorScheme = {type: 'declaration', property: 'color-scheme', value: theme};
 
-		rules.unshift({
-			type: 'media',
-			media: '(prefers-color-scheme: dark)',
-			rules: [{
-				type: 'rule',
-				selectors: ['.markdown-body'],
-				declarations: [
-					dark.startsWith('light') ? colorSchemeLight : colorSchemeDark,
-					...filterColors(colors[dark], usedVariables),
-				],
-			}],
-		});
+			rules.unshift({
+				type: 'media',
+				media: `(prefers-color-scheme: ${theme})`,
+				rules: [{
+					type: 'rule',
+					selectors: ['.markdown-body'],
+					declarations: [
+						colorScheme,
+						...filterColors(colors[theme], usedVariables),
+					],
+				}],
+			});
+		}
 	}
 
 	let string = css.stringify({type: 'stylesheet', stylesheet: {rules}});
