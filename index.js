@@ -128,6 +128,10 @@ function extractStyles(styles, ast) {
 				return false;
 			}
 
+			if (selector.includes('[data-') && !selector.includes('[data-color-mode')) {
+				return false;
+			}
+
 			const tag = selector.match(/^\w[-\w]+/);
 			if (tag && !ALLOW_TAGS.has(tag[0])) {
 				return false;
@@ -154,6 +158,10 @@ function extractStyles(styles, ast) {
 			return selector.slice(5);
 		}
 
+		if (selector.startsWith(':root ')) {
+			return selector.slice(6);
+		}
+
 		return selector;
 	}
 
@@ -174,7 +182,7 @@ function extractStyles(styles, ast) {
 function classifyRules(rules) {
 	function extractTheme(rule) {
 		for (const selector of rule.selectors) {
-			const match = /-theme\*=(\w+)/.exec(selector);
+			const match = /(?:-theme\*|data-color-mode)=(\w+)/.exec(selector);
 			if (match) {
 				return match[1];
 			}
