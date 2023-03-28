@@ -283,8 +283,54 @@ function applyColors(colors, rules) {
 	return rules;
 }
 
-async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
+/**
+ * Extract markdown styles from github.com
+ *
+ * If the `light` and `dark` themes are different the CSS returned will include
+ * `prefers-color-scheme` blocks for light and dark that match the specified
+ * `light` and `dark` themes (considered "auto" mode). This mode will always
+ * `preserveVars` as they are necessary for the `prefers-color-scheme` blocks
+ *
+ * If the `light` and `dark` themes are equal the output will only contain one
+ * theme (considered "single" mode)
+ *
+ * In "single" mode the output will apply the values of all variables to the
+ * rules themselves.The output will not contain any `var(--variable)` statements.
+ * You can disable this by setting `preserveVariables` to true
+ *
+ * @param {Object} options optional options object
+ * @param {string} [options.light=light] The theme to use for light theme
+ * @param {string} [options.dark=dark] The theme to use for dark theme
+ * @param {boolean} [options.list=false] If `true` will return a list of available themes instead of the CSS
+ * @param {boolean} [options.preserveVariables=false] If `true` will preserve the block of variables for a given theme even if only exporting one theme. By default variables are applied to the rules themselves and the resulting CSS will not contain any `var(--variable)`
+ * @param {boolean} [options.onlyVariables=false] Only output the color variables part of the css. forces `preserveVariables` to be `true`
+ * @param {boolean} [options.onlyStyles=false] Only output the style part of the css without any variables. forces `preserveVariables` to be `true` and ignores the theme values. Useful to get the base styles to use multiple themes
+ * @param {string} [options.rootSelector=.markdown-body] Set the root selector of the rendered markdown body as it should appear in the output css. Defaults to `.markdown-body`
+ */
+async function getCSS({
+	light = 'light',
+	dark = 'dark',
+	list = false,
+	preserveVariables = false,
+	onlyVariables = false,
+	onlyStyles = false,
+	rootSelector = '.markdown-body',
+} = {}) {
+	if (onlyVariables && onlyStyles) {
+		// Would result in an empty output
+		throw new Error('May not specify onlyVariables and onlyStyles at the same time');
+	}
+
+	if (rootSelector === '') {
+		throw new Error('rootSelector may not be an empty string');
+	}
+
+	if (onlyVariables || onlyStyles) {
+		preserveVariables = true;
+	}
+
 	const body = await cachedGot('https://github.com');
+	// Get a list of all css links on the page
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
 	const contents = await Promise.all(links.map(url => cachedGot(url)));
 
@@ -292,6 +338,7 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 	let rules = [];
 
 	for (const [url, cssText] of zip(links, contents)) {
+		// Get the name of a css file without the cache prevention number
 		const match = url.match(/(?<=\/)\w+(?=-\w+\.css$)/);
 		if (!match) {
 			continue;
@@ -300,6 +347,7 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 		const [name] = match;
 		const ast = css.parse(cssText);
 
+		// If it's a theme variable file extract colors, otherwise extract style
 		if (/^(light|dark)/.test(name)) {
 			extractColors(colors, name, ast);
 		} else {
@@ -307,6 +355,7 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 		}
 	}
 
+	// If asked to list return the list of themes we've discovered
 	if (list) {
 		return colors.map(({name}) => name).join('\n');
 	}
@@ -319,6 +368,7 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 
 	({rules} = classifyRules(rules));
 
+	// Find all variables used across all styles
 	const usedVariables = new Set(rules.flatMap(rule => rule.declarations.flatMap(({value}) => {
 		let match = /var\((?<name>[-\w]+?)\)/.exec(value)?.groups.name;
 		if (match === '--color-text-primary') {
@@ -331,40 +381,64 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 	const colorSchemeLight = {type: 'declaration', property: 'color-scheme', value: 'light'};
 	const colorSchemeDark = {type: 'declaration', property: 'color-scheme', value: 'dark'};
 
-	if (light === dark) {
-		rules = applyColors(colors[light], rules);
+	const filterColors = (declarations, usedVariables) =>
+		declarations.filter(({property}) => usedVariables.has(property));
 
-		if (light.startsWith('dark')) {
-			rules[0].declarations.unshift(colorSchemeDark);
+	if (onlyVariables) {
+		rules = [];
+	}
+
+	if (!onlyStyles) {
+		if (light === dark) {
+			if (preserveVariables) {
+				rules.unshift({
+					type: 'rule',
+					selectors: ['.markdown-body', `[data-theme="${light}"]`],
+					comment: light,
+					declarations: [
+						{type: 'comment', comment: light},
+						light.startsWith('dark') ? colorSchemeDark : colorSchemeLight,
+						...filterColors(colors[light], usedVariables),
+					],
+				});
+			} else {
+				rules = applyColors(colors[light], rules);
+
+				if (light.startsWith('dark')) {
+					rules[0].declarations.unshift(colorSchemeDark);
+				}
+
+				rules.unshift({type: 'comment', comment: light});
+			}
+		} else {
+			rules.unshift({
+				type: 'media',
+				media: '(prefers-color-scheme: light)',
+				rules: [{
+					type: 'rule',
+					selectors: ['.markdown-body', `[data-theme="${light}"]`],
+					declarations: [
+						{type: 'comment', comment: light},
+						light.startsWith('dark') ? colorSchemeDark : colorSchemeLight,
+						...filterColors(colors[light], usedVariables),
+					],
+				}],
+			});
+
+			rules.unshift({
+				type: 'media',
+				media: '(prefers-color-scheme: dark)',
+				rules: [{
+					type: 'rule',
+					selectors: ['.markdown-body', `[data-theme="${dark}"]`],
+					declarations: [
+						{type: 'comment', comment: dark},
+						dark.startsWith('light') ? colorSchemeLight : colorSchemeDark,
+						...filterColors(colors[dark], usedVariables),
+					],
+				}],
+			});
 		}
-	} else {
-		const filterColors = (declarations, usedVariables) => declarations.filter(({property}) => usedVariables.has(property));
-
-		rules.unshift({
-			type: 'media',
-			media: '(prefers-color-scheme: light)',
-			rules: [{
-				type: 'rule',
-				selectors: ['.markdown-body'],
-				declarations: [
-					light.startsWith('dark') ? colorSchemeDark : colorSchemeLight,
-					...filterColors(colors[light], usedVariables),
-				],
-			}],
-		});
-
-		rules.unshift({
-			type: 'media',
-			media: '(prefers-color-scheme: dark)',
-			rules: [{
-				type: 'rule',
-				selectors: ['.markdown-body'],
-				declarations: [
-					dark.startsWith('light') ? colorSchemeLight : colorSchemeDark,
-					...filterColors(colors[dark], usedVariables),
-				],
-			}],
-		});
 	}
 
 	let string = css.stringify({type: 'stylesheet', stylesheet: {rules}});
@@ -372,7 +446,13 @@ async function getCSS({light = 'light', dark = 'dark', list = false} = {}) {
 	const rootBegin = string.indexOf('\n.markdown-body {');
 	const rootEnd = string.indexOf('}', rootBegin) + 2;
 
-	string = string.slice(0, rootEnd) + manuallyAddedStyle + string.slice(rootEnd);
+	if (!onlyVariables) {
+		string = string.slice(0, rootEnd) + manuallyAddedStyle + string.slice(rootEnd);
+	}
+
+	if (rootSelector !== '.markdown-body') {
+		string = string.replaceAll('.markdown-body', rootSelector);
+	}
 
 	return string;
 }
