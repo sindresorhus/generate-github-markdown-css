@@ -284,30 +284,24 @@ function applyColors(colors, rules) {
 }
 
 /**
- * Extract markdown styles from github.com
- *
- * If the `light` and `dark` themes are different the CSS returned will include
- * `prefers-color-scheme` blocks for light and dark that match the specified
- * `light` and `dark` themes (considered "auto" mode). This mode will always
- * `preserveVars` as they are necessary for the `prefers-color-scheme` blocks
- *
- * If the `light` and `dark` themes are equal the output will only contain one
- * theme (considered "single" mode)
- *
- * In "single" mode the output will apply the values of all variables to the
- * rules themselves.The output will not contain any `var(--variable)` statements.
- * You can disable this by setting `preserveVariables` to true
- *
- * @param {Object} options optional options object
- * @param {string} [options.light=light] The theme to use for light theme
- * @param {string} [options.dark=dark] The theme to use for dark theme
- * @param {boolean} [options.list=false] If `true` will return a list of available themes instead of the CSS
- * @param {boolean} [options.preserveVariables=false] If `true` will preserve the block of variables for a given theme even if only exporting one theme. By default variables are applied to the rules themselves and the resulting CSS will not contain any `var(--variable)`
- * @param {boolean} [options.onlyVariables=false] Only output the color variables part of the css. forces `preserveVariables` to be `true`
- * @param {boolean} [options.onlyStyles=false] Only output the style part of the css without any variables. forces `preserveVariables` to be `true` and ignores the theme values. Useful to get the base styles to use multiple themes
- * @param {string} [options.rootSelector=.markdown-body] Set the root selector of the rendered markdown body as it should appear in the output css. Defaults to `.markdown-body`
- */
-async function getCSS({
+Extract markdown styles from github.com
+
+If the `light` and `dark` themes are different, the returned CSS will include `prefers-color-scheme` blocks for light and dark that match the specified `light` and `dark` themes (considered "auto" mode). This mode will always `preserveVariables` as they are necessary for the `prefers-color-scheme` blocks
+
+If the `light` and `dark` themes are equal, the output will only contain one theme (considered "single" mode).
+
+In "single" mode, the output will apply the values of all variables to the rules themselves. The output will not contain any `var(--variable)` statements. You can disable this by setting `preserveVariables` to `true`.
+
+@param {Object} options - Optional options object.
+@param {string} [options.light=light] - The theme to use for light theme.
+@param {string} [options.dark=dark] - The theme to use for dark theme.
+@param {boolean} [options.list=false] - If `true`, will return a list of available themes instead of the CSS.
+@param {boolean} [options.preserveVariables=false] - If `true`, will preserve the block of variables for a given theme even if only exporting one theme. By default, variables are applied to the rules themselves and the resulting CSS will not contain any `var(--variable)`.
+@param {boolean} [options.onlyVariables=false] - Only output the color variables part of the CSS. Forces `preserveVariables` to be `true`.
+@param {boolean} [options.onlyStyles=false] - Only output the style part of the CSS without any variables. Forces `preserveVariables` to be `true` and ignores the theme values. Useful to get the base styles to use multiple themes.
+@param {string} [options.rootSelector=.markdown-body] - Set the root selector of the rendered Markdown body as it should appear in the output CSS. Defaults to `.markdown-body`.
+*/
+export default async function getCSS({
 	light = 'light',
 	dark = 'dark',
 	list = false,
@@ -456,5 +450,3 @@ async function getCSS({
 
 	return string;
 }
-
-export default getCSS;
