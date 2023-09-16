@@ -1737,3 +1737,16 @@ Hr's:
 footnotes[^1].
 
 [^1]: hello world!.
+
+<p>Cryptids of Cornwall:</p>
+
+<dl>
+  <dt>Beast of Bodmin</dt>
+  <dd>A large feline inhabiting Bodmin Moor.</dd>
+
+  <dt>Morgawr</dt>
+  <dd>A sea serpent.</dd>
+
+  <dt>Owlman</dt>
+  <dd>A giant owl-like creature.</dd>
+</dl>
