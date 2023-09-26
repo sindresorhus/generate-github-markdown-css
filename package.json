@@ -16,7 +16,7 @@
 	},
 	"exports": "./index.js",
 	"engines": {
-		"node": ">=14.8"
+		"node": ">=18"
 	},
 	"scripts": {
 		"test": "xo && node test.js"
@@ -39,10 +39,10 @@
 	],
 	"dependencies": {
 		"css": "^3.0.0",
-		"got": "^11.8.2",
-		"meow": "^10.1.1"
+		"got": "^13.0.0",
+		"meow": "^12.1.1"
 	},
 	"devDependencies": {
-		"xo": "^0.46.4"
+		"xo": "^0.56.0"
 	}
 }

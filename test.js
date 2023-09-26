@@ -2,29 +2,31 @@ import fs from 'node:fs';
 import {renderMarkdown} from './utilities.js';
 import githubMarkdownCss from './index.js';
 
-(async () => {
-	fs.mkdirSync('dist', {recursive: true});
+fs.mkdirSync('dist', {recursive: true});
 
-	fs.writeFileSync('dist/auto.css', await githubMarkdownCss());
-	const themes = [
-		'light',
-		'light_high_contrast',
-		'light_colorblind',
-		'light_tritanopia',
-		'dark',
-		'dark_high_contrast',
-		'dark_colorblind',
-		'dark_tritanopia',
-		'dark_dimmed',
-	];
+fs.writeFileSync('dist/auto.css', await githubMarkdownCss());
 
-	await Promise.all(themes.map(async theme => {
-		fs.writeFileSync(`dist/${theme}.css`, await githubMarkdownCss({light: theme, dark: theme}));
-	}));
-	fs.writeFileSync('dist/auto_colorblind.css', await githubMarkdownCss({light: 'light_colorblind', dark: 'dark_colorblind'}));
+const themes = [
+	'light',
+	'light_high_contrast',
+	'light_colorblind',
+	'light_tritanopia',
+	'dark',
+	'dark_high_contrast',
+	'dark_colorblind',
+	'dark_tritanopia',
+	'dark_dimmed',
+];
 
-	const fixture = await renderMarkdown();
-	const html = `<!DOCTYPE html>
+await Promise.all(themes.map(async theme => {
+	fs.writeFileSync(`dist/${theme}.css`, await githubMarkdownCss({light: theme, dark: theme}));
+}));
+
+fs.writeFileSync('dist/auto_colorblind.css', await githubMarkdownCss({light: 'light_colorblind', dark: 'dark_colorblind'}));
+
+const fixture = await renderMarkdown();
+
+const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -44,19 +46,21 @@ ${fixture}
 </body>
 </html>
 `;
-	fs.writeFileSync('dist/index.html', html);
 
-	// Demonstrate theme variable files switching with base css
-	fs.mkdirSync('dist/vars', {recursive: true});
+fs.writeFileSync('dist/index.html', html);
 
-	fs.writeFileSync('dist/vars/base.css', await githubMarkdownCss({onlyStyles: true}));
-	fs.writeFileSync('dist/vars/auto-vars.css', await githubMarkdownCss({onlyVariables: true}));
-	fs.writeFileSync('dist/vars/auto_colorblind-vars.css', await githubMarkdownCss({light: 'light_colorblind', dark: 'dark_colorblind', onlyVariables: true}));
-	await Promise.all(themes.map(async theme => {
-		fs.writeFileSync(`dist/vars/${theme}-vars.css`, await githubMarkdownCss({light: theme, dark: theme, onlyVariables: true}));
-	}));
+// Demonstrate theme variable files switching with base css
+fs.mkdirSync('dist/vars', {recursive: true});
 
-	const htmlVars = `<!DOCTYPE html>
+fs.writeFileSync('dist/vars/base.css', await githubMarkdownCss({onlyStyles: true}));
+fs.writeFileSync('dist/vars/auto-vars.css', await githubMarkdownCss({onlyVariables: true}));
+fs.writeFileSync('dist/vars/auto_colorblind-vars.css', await githubMarkdownCss({light: 'light_colorblind', dark: 'dark_colorblind', onlyVariables: true}));
+
+await Promise.all(themes.map(async theme => {
+	fs.writeFileSync(`dist/vars/${theme}-vars.css`, await githubMarkdownCss({light: theme, dark: theme, onlyVariables: true}));
+}));
+
+const htmlVars = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -77,5 +81,5 @@ ${fixture}
 </body>
 </html>
 `;
-	fs.writeFileSync('dist/vars/index.html', htmlVars);
-})();
+
+fs.writeFileSync('dist/vars/index.html', htmlVars);

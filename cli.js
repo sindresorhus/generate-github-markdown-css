@@ -49,7 +49,9 @@ const cli = meow(
 		flags: {
 			theme: {
 				type: 'string',
-				alias: ['type'],
+				aliases: [
+					'type',
+				],
 			},
 			light: {
 				type: 'string',
@@ -76,69 +78,67 @@ const cli = meow(
 	},
 );
 
-(async () => {
-	const {
-		theme,
-		list,
-		preserveVariables,
-		onlyStyle,
-		onlyVariables,
-		rootSelector,
-	} = cli.flags;
+const {
+	theme,
+	list,
+	preserveVariables,
+	onlyStyle,
+	onlyVariables,
+	rootSelector,
+} = cli.flags;
 
-	let {light, dark} = cli.flags;
+let {light, dark} = cli.flags;
 
-	/*
-	| Theme | Light | Dark | Outcome                            |
-	| ----- | ----- | ---- | ---------------------------------- |
-	| ✓     |       |      | Single mode, use Theme             |
-	| ✓     | ✓     |      | Not allowed, can't determine theme |
-	| ✓     |       | ✓    | Not allowed, can't determine theme |
-	| ✓     | ✓     | ✓    | Not allowed, can't determine theme |
-	|       |       |      | Auto, default themes               |
-	|       | ✓     |      | Single mode, use Light             |
-	|       |       | ✓    | Single mode, use Dark              |
-	|       | ✓     | ✓    | Auto, use Light and Dark           |
-	|       | ✓     | ✓    | Single mode if Light === Dark      |
-	| auto  |       |      | Auto, default themes               |
-	| auto  | ✓     |      | Auto, use Light, default dark      |
-	| auto  |       | ✓    | Auto, use Dark, default light      |
-	| auto  | ✓     | ✓    | Auto, use Light and Dark           |
-	| auto  | ✓     | ✓    | Single mode if Light === Dark      |
-	*/
+/*
+| Theme | Light | Dark | Outcome                            |
+| ----- | ----- | ---- | ---------------------------------- |
+| ✓     |       |      | Single mode, use Theme             |
+| ✓     | ✓     |      | Not allowed, can't determine theme |
+| ✓     |       | ✓    | Not allowed, can't determine theme |
+| ✓     | ✓     | ✓    | Not allowed, can't determine theme |
+|       |       |      | Auto, default themes               |
+|       | ✓     |      | Single mode, use Light             |
+|       |       | ✓    | Single mode, use Dark              |
+|       | ✓     | ✓    | Auto, use Light and Dark           |
+|       | ✓     | ✓    | Single mode if Light === Dark      |
+| auto  |       |      | Auto, default themes               |
+| auto  | ✓     |      | Auto, use Light, default dark      |
+| auto  |       | ✓    | Auto, use Dark, default light      |
+| auto  | ✓     | ✓    | Auto, use Light and Dark           |
+| auto  | ✓     | ✓    | Single mode if Light === Dark      |
+*/
 
-	// Use "single" mode when type is a theme name other than 'auto'
-	if (theme && theme !== 'auto') {
-		if (light || dark) {
-			console.error('You may not specify light and/or dark unless type/theme is set to "auto"');
-			exit(1);
-		}
-
-		light = theme;
-		dark = theme;
-	}
-
-	// If only light or dark was specified set the other to force "single mode"
-	if (!theme && light && !dark) {
-		dark = light;
-	} else if (!theme && !light && dark) {
-		light = dark;
-	}
-
-	if (rootSelector === '') {
-		console.error('--rootSelector cannot be an empty string');
+// Use "single" mode when type is a theme name other than 'auto'
+if (theme && theme !== 'auto') {
+	if (light || dark) {
+		console.error('You may not specify light and/or dark unless type/theme is set to "auto"');
 		exit(1);
 	}
 
-	console.log(
-		await githubMarkdownCss({
-			light,
-			dark,
-			list,
-			preserveVariables,
-			onlyStyles: onlyStyle,
-			onlyVariables,
-			rootSelector,
-		}),
-	);
-})();
+	light = theme;
+	dark = theme;
+}
+
+// If only light or dark was specified set the other to force "single mode"
+if (!theme && light && !dark) {
+	dark = light;
+} else if (!theme && !light && dark) {
+	light = dark;
+}
+
+if (rootSelector === '') {
+	console.error('--rootSelector cannot be an empty string');
+	exit(1);
+}
+
+console.log(
+	await githubMarkdownCss({
+		light,
+		dark,
+		list,
+		preserveVariables,
+		onlyStyles: onlyStyle,
+		onlyVariables,
+		rootSelector,
+	}),
+);
