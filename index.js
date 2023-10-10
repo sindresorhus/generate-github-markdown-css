@@ -113,7 +113,7 @@ const ALLOW_CLASS = new Set([
 	'.task-list-item-checkbox',
 ]);
 
-function extractStyles(styles, ast) {
+function extractStyles(rules, ast) {
 	function select(selector) {
 		if (selector.startsWith('.markdown-body')) {
 			if (selector.includes('zeroclipboard')) {
@@ -153,7 +153,7 @@ function extractStyles(styles, ast) {
 		return false;
 	}
 
-	function fix(selector) {
+	function fixSelector(selector) {
 		if (selector.startsWith('html ') || selector.startsWith('body ')) {
 			return selector.slice(5);
 		}
@@ -165,15 +165,23 @@ function extractStyles(styles, ast) {
 		return selector;
 	}
 
+	function fixDeclaration(declaration) {
+		// 'var(--fgColor-default, var(--color-fg-default))' -> 'var(--color-fg-default)'
+		if (declaration.value.includes('Color')) {
+			declaration.value = declaration.value.replace(/var\([^,]+,\s*(var\(--color-.+?\))\)/, '$1');
+		}
+	}
+
 	for (const rule of walkRules(ast)) {
 		if (rule.declarations.some(({value}) => value.includes('prettylights'))) {
-			styles.push(rule);
+			rules.push(rule);
 		} else {
 			rule.selectors = rule.selectors
 				.filter(selector => select(selector))
-				.map(selector => fix(selector));
+				.map(selector => fixSelector(selector));
 			if (rule.selectors.length > 0) {
-				styles.push(rule);
+				rule.declarations.map(declaration => fixDeclaration(declaration));
+				rules.push(rule);
 			}
 		}
 	}
@@ -220,7 +228,7 @@ function classifyRules(rules) {
 	for (const rule of rules) {
 		const theme = extractTheme(rule);
 		if (theme) {
-			result[extractTheme(rule)].push(...rule.declarations);
+			result[theme].push(...rule.declarations);
 		} else {
 			rule.selectors = rule.selectors.some(s => /^(:root|html|body|\[data-color-mode])$/.test(s))
 				? ['.markdown-body']
