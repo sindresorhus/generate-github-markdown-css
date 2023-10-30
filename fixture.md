@@ -11,6 +11,16 @@
 
 <img src="image.png" width="182" align="right">
 
+#### Alerts
+
+> [!NOTE]
+> Highlights information that users should take into account, even when skimming.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention due to potential risks.
 
 ### Code snippet
 
