@@ -111,7 +111,7 @@ const ALLOW_CLASS = new Set([
 	'.contains-task-list',
 	'.task-list-item',
 	'.task-list-item-checkbox',
-	// For markdown alerts
+	// For Markdown alerts.
 	'.markdown-alert',
 	'.color-fg-accent',
 	'.color-fg-attention',
