@@ -111,6 +111,15 @@ const ALLOW_CLASS = new Set([
 	'.contains-task-list',
 	'.task-list-item',
 	'.task-list-item-checkbox',
+	// For Markdown alerts.
+	'.markdown-alert',
+	'.color-fg-accent',
+	'.color-fg-attention',
+	'.color-fg-done',
+	'.text-semibold',
+	'.d-inline-flex',
+	'.flex-items-center',
+	'.mb-1',
 ]);
 
 function extractStyles(rules, ast) {
