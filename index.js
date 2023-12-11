@@ -18,21 +18,36 @@ function extractColors(colors, name, ast) {
 	colors[name] = Object.assign([], {name});
 	colors.push(colors[name]);
 
+	function pushOrReplace(declaration) {
+		const {property, value} = declaration;
+		if (property in colors[name]) {
+			if (colors[name][property] !== value) {
+				colors[name][property] = value;
+				const index = colors[name].findIndex(declaration => declaration.property === property);
+				colors[name][index] = declaration;
+			}
+		} else {
+			colors[name][property] = value;
+			colors[name].push(declaration);
+		}
+	}
+
 	for (const rule of walkRules(ast)) {
 		for (const declaration of rule.declarations) {
 			if (declaration.type === 'declaration') {
-				const {property, value} = declaration;
-				colors[name][property] = value;
-				colors[name].push(declaration);
+				pushOrReplace(declaration);
 			}
 		}
 	}
 
+	colors[name]['--base-size-8'] = '8px';
+	colors[name]['--base-size-16'] = '16px';
 	colors[name]['--base-text-weight-normal'] = '400';
+	colors[name]['--base-text-weight-medium'] = '500';
 	colors[name]['--base-text-weight-semibold'] = '600';
 }
 
-// https://github.com/gjtorikian/html-pipeline/blob/main/lib/html/pipeline/sanitization_filter.rb
+// https://github.com/gjtorikian/html-pipeline/blob/main/lib/html_pipeline/sanitization_filter.rb
 const ALLOW_TAGS = new Set([
 	'h1',
 	'h2',
@@ -40,8 +55,6 @@ const ALLOW_TAGS = new Set([
 	'h4',
 	'h5',
 	'h6',
-	'h7',
-	'h8',
 	'br',
 	'b',
 	'i',
@@ -58,6 +71,7 @@ const ALLOW_TAGS = new Set([
 	'sup',
 	'sub',
 	'p',
+	'picture',
 	'ol',
 	'ul',
 	'table',
@@ -93,6 +107,7 @@ const ALLOW_TAGS = new Set([
 	'dfn',
 	'mark',
 	'small',
+	'source',
 	'span',
 	'time',
 	'wbr',
@@ -112,14 +127,19 @@ const ALLOW_CLASS = new Set([
 	'.task-list-item',
 	'.task-list-item-checkbox',
 	// For Markdown alerts.
+	'.octicon-info',
+	'.octicon-light-bulb',
+	'.octicon-report',
+	'.octicon-alert',
+	'.octicon-stop',
 	'.markdown-alert',
-	'.color-fg-accent',
-	'.color-fg-attention',
-	'.color-fg-done',
-	'.text-semibold',
-	'.d-inline-flex',
-	'.flex-items-center',
-	'.mb-1',
+	'.markdown-alert-title',
+	'.markdown-alert-note',
+	'.markdown-alert-tip',
+	'.markdown-alert-important',
+	'.markdown-alert-warning',
+	'.markdown-alert-caution',
+	'.mr-2',
 ]);
 
 function extractStyles(rules, ast) {
@@ -182,7 +202,8 @@ function extractStyles(rules, ast) {
 	}
 
 	for (const rule of walkRules(ast)) {
-		if (rule.declarations.some(({value}) => value.includes('prettylights'))) {
+		if (!rule.selectors.some(selector => selector.includes('QueryBuilder'))
+			&& rule.declarations.some(({value}) => value.includes('prettylights'))) {
 			rules.push(rule);
 		} else {
 			rule.selectors = rule.selectors
@@ -190,6 +211,14 @@ function extractStyles(rules, ast) {
 				.map(selector => fixSelector(selector));
 			if (rule.selectors.length > 0) {
 				rule.declarations.map(declaration => fixDeclaration(declaration));
+
+				// '-webkit-appearance: x' << 'appearance: x'
+				const index = rule.declarations.findIndex(declaration => declaration.property === '-webkit-appearance');
+				if (index >= 0) {
+					const {value} = rule.declarations[index];
+					rule.declarations.splice(index + 1, 0, {type: 'declaration', property: 'appearance', value});
+				}
+
 				rules.push(rule);
 			}
 		}
@@ -282,22 +311,57 @@ const manuallyAddedStyle = `
 function applyColors(colors, rules) {
 	for (const rule of rules) {
 		for (const declaration of rule.declarations) {
-			const match = /var\((?<name>.+?)\)/.exec(declaration.value);
-			if (match) {
-				let {name} = match.groups;
-				name = name.split(',')[0];
-				if (name === '--color-text-primary') {
-					name = '--color-fg-default';
-				}
+			if (declaration.value.includes('var(')) {
+				declaration.value = declaration.value.replaceAll(/var\((.+?)\)/g, (match, name) => {
+					name = name.split(',')[0];
+					if (name === '--color-text-primary') {
+						name = '--color-fg-default';
+					}
 
-				if (name in colors) {
-					declaration.value = declaration.value.replace(match[0], colors[name]);
-				}
+					if (name in colors) {
+						return colors[name];
+					}
+
+					return match[0];
+				});
 			}
 		}
 	}
 
 	return rules;
+}
+
+// Workaround for module 'css' does not understand new CSS syntaxes (@container, etc.)
+// Strip them as they are not used in the output anyway.
+function patchCSSText(cssText) {
+	function strip(mark, left = '{', right = '}') {
+		const ranges = [];
+
+		let i = -1;
+		while ((i = cssText.indexOf(mark, i + 1)) >= 0) {
+			let j = cssText.indexOf(left, i) + 1;
+			let depth = 1;
+			while (depth > 0) {
+				if (cssText[j] === left) {
+					depth++;
+				} else if (cssText[j] === right) {
+					depth--;
+				}
+
+				j++;
+			}
+
+			ranges.push([i, j]);
+		}
+
+		for (const [i, j] of ranges.reverse()) {
+			cssText = cssText.slice(0, i) + cssText.slice(j);
+		}
+	}
+
+	strip('@container');
+
+	return cssText;
 }
 
 /**
@@ -356,7 +420,8 @@ export default async function getCSS({
 		}
 
 		const [name] = match;
-		const ast = css.parse(cssText);
+		const patched = patchCSSText(cssText);
+		const ast = css.parse(patched);
 
 		// If it's a theme variable file extract colors, otherwise extract style
 		if (/^(light|dark)/.test(name)) {
