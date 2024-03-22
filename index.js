@@ -40,11 +40,16 @@ function extractColors(colors, name, ast) {
 		}
 	}
 
-	colors[name]['--base-size-8'] = '8px';
-	colors[name]['--base-size-16'] = '16px';
-	colors[name]['--base-text-weight-normal'] = '400';
-	colors[name]['--base-text-weight-medium'] = '500';
-	colors[name]['--base-text-weight-semibold'] = '600';
+	function addDeclaration(property, value) {
+		colors[name].push({type: 'declaration', property, value});
+		colors[name][property] = value;
+	}
+
+	addDeclaration('--base-size-8', '8px');
+	addDeclaration('--base-size-16', '16px');
+	addDeclaration('--base-text-weight-normal', '400');
+	addDeclaration('--base-text-weight-medium', '500');
+	addDeclaration('--base-text-weight-semibold', '600');
 }
 
 // https://github.com/gjtorikian/html-pipeline/blob/main/lib/html_pipeline/sanitization_filter.rb
@@ -322,7 +327,7 @@ function applyColors(colors, rules) {
 						return colors[name];
 					}
 
-					return match[0];
+					return match;
 				});
 			}
 		}
@@ -446,12 +451,17 @@ export default async function getCSS({
 
 	// Find all variables used across all styles
 	const usedVariables = new Set(rules.flatMap(rule => rule.declarations.flatMap(({value}) => {
-		let match = /var\((?<name>[-\w]+?)\)/.exec(value)?.groups.name;
-		if (match === '--color-text-primary') {
-			match = '--color-fg-default';
-		}
+		const matches = [];
+		const re = /var\((?<name>[-\w]+?)[,)]/g;
+		let match = null;
+		do {
+			match = re.exec(value);
+			if (match) {
+				matches.push(match.groups.name);
+			}
+		} while (match);
 
-		return match ? [match] : [];
+		return matches;
 	})));
 
 	const colorSchemeLight = {type: 'declaration', property: 'color-scheme', value: 'light'};
