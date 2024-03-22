@@ -322,7 +322,7 @@ function applyColors(colors, rules) {
 						return colors[name];
 					}
 
-					return match[0];
+					return match;
 				});
 			}
 		}
