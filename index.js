@@ -45,6 +45,7 @@ function extractColors(colors, name, ast) {
 		colors[name][property] = value;
 	}
 
+	addDeclaration('--base-size-4', '4px');
 	addDeclaration('--base-size-8', '8px');
 	addDeclaration('--base-size-16', '16px');
 	addDeclaration('--base-text-weight-normal', '400');
