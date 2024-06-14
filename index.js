@@ -39,17 +39,6 @@ function extractColors(colors, name, ast) {
 			}
 		}
 	}
-
-	function addDeclaration(property, value) {
-		colors[name].push({type: 'declaration', property, value});
-		colors[name][property] = value;
-	}
-
-	addDeclaration('--base-size-8', '8px');
-	addDeclaration('--base-size-16', '16px');
-	addDeclaration('--base-text-weight-normal', '400');
-	addDeclaration('--base-text-weight-medium', '500');
-	addDeclaration('--base-text-weight-semibold', '600');
 }
 
 // https://github.com/gjtorikian/html-pipeline/blob/main/lib/html_pipeline/sanitization_filter.rb
@@ -200,9 +189,9 @@ function extractStyles(rules, ast) {
 	}
 
 	function fixDeclaration(declaration) {
-		// 'var(--fgColor-default, var(--color-fg-default))' -> 'var(--color-fg-default)'
+		// 'var(--fgColor-default, var(--color-fg-default))' -> 'var(--fgColor-default)'
 		if (declaration.value.includes('Color')) {
-			declaration.value = declaration.value.replace(/var\([^,]+,\s*(var\(--color-.+?\))\)/, '$1');
+			declaration.value = declaration.value.replace(/var\(([^,]+),\s*(var\(--color-.+?\))\)/, 'var($1)');
 		}
 	}
 
@@ -319,9 +308,6 @@ function applyColors(colors, rules) {
 			if (declaration.value.includes('var(')) {
 				declaration.value = declaration.value.replaceAll(/var\((.+?)\)/g, (match, name) => {
 					name = name.split(',')[0];
-					if (name === '--color-text-primary') {
-						name = '--color-fg-default';
-					}
 
 					if (name in colors) {
 						return colors[name];
@@ -387,6 +373,7 @@ In "single" mode, the output will apply the values of all variables to the rules
 @param {boolean} [options.onlyStyles=false] - Only output the style part of the CSS without any variables. Forces `preserveVariables` to be `true` and ignores the theme values. Useful to get the base styles to use multiple themes.
 @param {string} [options.rootSelector=.markdown-body] - Set the root selector of the rendered Markdown body as it should appear in the output CSS. Defaults to `.markdown-body`.
 */
+// eslint-disable-next-line complexity
 export default async function getCSS({
 	light = 'light',
 	dark = 'dark',
@@ -414,12 +401,13 @@ export default async function getCSS({
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
 	const contents = await Promise.all(links.map(url => cachedGot(url)));
 
+	const shared = [];
 	const colors = [];
 	let rules = [];
 
 	for (const [url, cssText] of zip(links, contents)) {
 		// Get the name of a css file without the cache prevention number
-		const match = url.match(/(?<=\/)\w+(?=-\w+\.css$)/);
+		const match = url.match(/(?<=\/)[-\w]+(?=-\w+\.css$)/);
 		if (!match) {
 			continue;
 		}
@@ -427,6 +415,11 @@ export default async function getCSS({
 		const [name] = match;
 		const patched = patchCSSText(cssText);
 		const ast = css.parse(patched);
+
+		// Primer*.css contains styles and variables that apply to all themes
+		if (name.startsWith('primer')) {
+			extractColors(shared, name, ast);
+		}
 
 		// If it's a theme variable file extract colors, otherwise extract style
 		if (/^(light|dark)/.test(name)) {
@@ -439,6 +432,19 @@ export default async function getCSS({
 	// If asked to list return the list of themes we've discovered
 	if (list) {
 		return colors.map(({name}) => name).join('\n');
+	}
+
+	// Merge shared variables into every color theme
+	for (const declarations of shared) {
+		for (const declaration of declarations) {
+			const {property, value} = declaration;
+			for (const theme of colors) {
+				if (!(property in theme)) {
+					theme[property] = value;
+					theme.unshift(declaration);
+				}
+			}
+		}
 	}
 
 	rules = reverseUnique(rules, rule => {
@@ -529,10 +535,9 @@ export default async function getCSS({
 
 	let string = css.stringify({type: 'stylesheet', stylesheet: {rules}});
 
-	const rootBegin = string.indexOf('\n.markdown-body {');
-	const rootEnd = string.indexOf('}', rootBegin) + 2;
-
 	if (!onlyVariables) {
+		const rootBegin = string.indexOf('\n.markdown-body {');
+		const rootEnd = string.indexOf('}', rootBegin) + 2;
 		string = string.slice(0, rootEnd) + manuallyAddedStyle + string.slice(rootEnd);
 	}
 
