@@ -434,19 +434,6 @@ export default async function getCSS({
 		return colors.map(({name}) => name).join('\n');
 	}
 
-	// Merge shared variables into every color theme
-	for (const declarations of shared) {
-		for (const declaration of declarations) {
-			const {property, value} = declaration;
-			for (const theme of colors) {
-				if (!(property in theme)) {
-					theme[property] = value;
-					theme.unshift(declaration);
-				}
-			}
-		}
-	}
-
 	rules = reverseUnique(rules, rule => {
 		const selector = rule.selectors.join(',');
 		const body = rule.declarations.map(({property, value}) => `${property}: ${value}`).join(';');
@@ -531,6 +518,12 @@ export default async function getCSS({
 				}],
 			});
 		}
+
+		rules.unshift({
+			type: 'rule',
+			selectors: ['.markdown-body'],
+			declarations: filterColors(shared.flat(1), usedVariables),
+		});
 	}
 
 	let string = css.stringify({type: 'stylesheet', stylesheet: {rules}});
