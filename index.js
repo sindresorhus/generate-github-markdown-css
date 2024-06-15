@@ -468,6 +468,8 @@ export default async function getCSS({
 	}
 
 	if (!onlyStyles) {
+		const sharedDeclarations = filterColors(shared.flat(1), usedVariables);
+
 		if (light === dark) {
 			if (preserveVariables) {
 				rules.unshift({
@@ -482,6 +484,9 @@ export default async function getCSS({
 				});
 			} else {
 				rules = applyColors(colors[light], rules);
+
+				const sharedColors = Object.fromEntries(sharedDeclarations.map(({property, value}) => [property, value]));
+				rules = applyColors(sharedColors, rules);
 
 				if (light.startsWith('dark')) {
 					rules[0].declarations.unshift(colorSchemeDark);
@@ -522,7 +527,7 @@ export default async function getCSS({
 		rules.unshift({
 			type: 'rule',
 			selectors: ['.markdown-body'],
-			declarations: filterColors(shared.flat(1), usedVariables),
+			declarations: sharedDeclarations,
 		});
 	}
 
