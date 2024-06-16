@@ -482,6 +482,12 @@ export default async function getCSS({
 						...filterColors(colors[light], usedVariables),
 					],
 				});
+
+				rules.unshift({
+					type: 'rule',
+					selectors: ['.markdown-body'],
+					declarations: sharedDeclarations,
+				});
 			} else {
 				rules = applyColors(colors[light], rules);
 
@@ -522,13 +528,13 @@ export default async function getCSS({
 					],
 				}],
 			});
-		}
 
-		rules.unshift({
-			type: 'rule',
-			selectors: ['.markdown-body'],
-			declarations: sharedDeclarations,
-		});
+			rules.unshift({
+				type: 'rule',
+				selectors: ['.markdown-body'],
+				declarations: sharedDeclarations,
+			});
+		}
 	}
 
 	let string = css.stringify({type: 'stylesheet', stylesheet: {rules}});
