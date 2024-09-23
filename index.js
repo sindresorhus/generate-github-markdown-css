@@ -1,148 +1,10 @@
-import css from 'css';
-import {unique, reverseUnique, cachedGot, zip} from './utilities.js';
+import postcss from 'postcss';
+import {cachedFetch, reverseUnique, unique, zip} from './utilities.js';
+import {ALLOW_CLASS, ALLOW_TAGS, manuallyAddedStyle} from './constants.js';
 
-function * walkRules(ast) {
-	if (ast.type === 'stylesheet') {
-		for (const rule of ast.stylesheet.rules) {
-			if (rule.type === 'rule') {
-				yield rule;
-			} else {
-				yield * walkRules(rule);
-			}
-		}
-	}
-	// ignore @media, etc.
-}
-
-function extractColors(colors, name, ast) {
-	colors[name] = Object.assign([], {name});
-	colors.push(colors[name]);
-
-	function pushOrReplace(declaration) {
-		const {property, value} = declaration;
-		if (property in colors[name]) {
-			if (colors[name][property] !== value) {
-				colors[name][property] = value;
-				const index = colors[name].findIndex(declaration => declaration.property === property);
-				colors[name][index] = declaration;
-			}
-		} else {
-			colors[name][property] = value;
-			colors[name].push(declaration);
-		}
-	}
-
-	for (const rule of walkRules(ast)) {
-		for (const declaration of rule.declarations) {
-			if (declaration.type === 'declaration') {
-				pushOrReplace(declaration);
-			}
-		}
-	}
-}
-
-// https://github.com/gjtorikian/html-pipeline/blob/main/lib/html_pipeline/sanitization_filter.rb
-const ALLOW_TAGS = new Set([
-	'h1',
-	'h2',
-	'h3',
-	'h4',
-	'h5',
-	'h6',
-	'br',
-	'b',
-	'i',
-	'strong',
-	'em',
-	'a',
-	'pre',
-	'code',
-	'img',
-	'tt',
-	'div',
-	'ins',
-	'del',
-	'sup',
-	'sub',
-	'p',
-	'picture',
-	'ol',
-	'ul',
-	'table',
-	'thead',
-	'tbody',
-	'tfoot',
-	'blockquote',
-	'dl',
-	'dt',
-	'dd',
-	'kbd',
-	'q',
-	'samp',
-	'var',
-	'hr',
-	'ruby',
-	'rt',
-	'rp',
-	'li',
-	'tr',
-	'td',
-	'th',
-	's',
-	'strike',
-	'summary',
-	'details',
-	'caption',
-	'figure',
-	'figcaption',
-	'abbr',
-	'bdo',
-	'cite',
-	'dfn',
-	'mark',
-	'small',
-	'source',
-	'span',
-	'time',
-	'wbr',
-	'body',
-	'html',
-	'g-emoji',
-	'input', // [type=checkbox], for task list
-]);
-
-const ALLOW_CLASS = new Set([
-	'.anchor',
-	'.g-emoji',
-	'.highlight',
-	'.octicon',
-	'.octicon-link',
-	'.contains-task-list',
-	'.task-list-item',
-	'.task-list-item-checkbox',
-	// For Markdown alerts.
-	'.octicon-info',
-	'.octicon-light-bulb',
-	'.octicon-report',
-	'.octicon-alert',
-	'.octicon-stop',
-	'.markdown-alert',
-	'.markdown-alert-title',
-	'.markdown-alert-note',
-	'.markdown-alert-tip',
-	'.markdown-alert-important',
-	'.markdown-alert-warning',
-	'.markdown-alert-caution',
-	'.mr-2',
-]);
-
-function extractStyles(rules, ast) {
+function extractStyles(rules, cssText) {
 	function select(selector) {
 		if (selector.startsWith('.markdown-body')) {
-			if (selector.includes('zeroclipboard')) {
-				return false;
-			}
-
 			return true;
 		}
 
@@ -193,30 +55,72 @@ function extractStyles(rules, ast) {
 		if (declaration.value.includes('Color')) {
 			declaration.value = declaration.value.replace(/var\(([^,]+),\s*(var\(--color-.+?\))\)/, 'var($1)');
 		}
+
+		// '-webkit-appearance: x' << 'appearance: x'
+		if (declaration.prop === '-webkit-appearance') {
+			declaration.after(postcss.decl({prop: 'appearance', value: declaration.value}));
+		}
 	}
 
-	for (const rule of walkRules(ast)) {
-		if (!rule.selectors.some(selector => selector.includes('QueryBuilder'))
-			&& rule.declarations.some(({value}) => value.includes('prettylights'))) {
-			rules.push(rule);
+	function isRuleUnderAtRule(rule) {
+		for (let {parent} = rule; parent; parent = parent.parent) {
+			// Keep @layer rules, drop everything else (like '@keyframes')
+			if (parent.type === 'atrule' && parent.name !== 'layer') {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	const root = postcss.parse(cssText);
+	root.walkRules(rule => {
+		if (isRuleUnderAtRule(rule)) {
+			return;
+		}
+
+		if (rule.some(decl => decl.value.includes('prettylights'))) {
+			if (!rule.selector.includes('.QueryBuilder')) {
+				rules.push(rule);
+			}
 		} else {
 			rule.selectors = rule.selectors
 				.filter(selector => select(selector))
-				.map(selector => fixSelector(selector));
-			if (rule.selectors.length > 0) {
-				rule.declarations.map(declaration => fixDeclaration(declaration));
-
-				// '-webkit-appearance: x' << 'appearance: x'
-				const index = rule.declarations.findIndex(declaration => declaration.property === '-webkit-appearance');
-				if (index >= 0) {
-					const {value} = rule.declarations[index];
-					rule.declarations.splice(index + 1, 0, {type: 'declaration', property: 'appearance', value});
-				}
-
+				.map(selector => fixSelector(selector))
+				.filter(Boolean);
+			if (rule.selector.length > 0) {
+				rule.walkDecls(fixDeclaration);
 				rules.push(rule);
 			}
 		}
+	});
+}
+
+function extractVariables(themes, name, cssText) {
+	themes[name] ||= Object.assign([], {name});
+	themes.push(themes[name]);
+
+	const theme = themes[name];
+
+	/** @param {postcss.Declaration} declaration */
+	function pushOrReplace(declaration) {
+		if (declaration.variable) {
+			const {prop, value} = declaration;
+			if (prop in theme) {
+				if (theme[prop] !== value) {
+					theme[prop] = value;
+					const index = theme.findIndex(decl => decl.prop === prop);
+					theme[index] = declaration;
+				}
+			} else {
+				theme[prop] = value;
+				theme.push(declaration);
+			}
+		}
 	}
+
+	const root = postcss.parse(cssText);
+	root.walkRules(rule => rule.walkDecls(pushOrReplace));
 }
 
 function classifyRules(rules) {
@@ -235,22 +139,28 @@ function classifyRules(rules) {
 		const result = [];
 		const selectorIndexMap = {};
 		for (const rule of rules) {
-			const selector = rule.selectors.join(',');
-			if (selector in selectorIndexMap) {
-				result[selectorIndexMap[selector]].declarations.push(...rule.declarations);
+			if (rule.selector in selectorIndexMap) {
+				const existingRule = result[selectorIndexMap[rule.selector]];
+				rule.walkDecls(decl => existingRule.append(decl));
 			} else {
 				const index = result.length;
-				selectorIndexMap[selector] = index;
+				selectorIndexMap[rule.selector] = index;
 				result.push(rule);
 			}
 		}
 
 		for (const rule of result) {
-			rule.declarations = reverseUnique(rule.declarations, declaration => declaration.property);
+			const last = {};
+			rule.walkDecls(decl => {
+				if (last[decl.prop]) {
+					last[decl.prop].remove();
+				}
 
-			if (rule.selectors[0] === '.markdown-body') {
-				rule.declarations = rule.declarations.filter(declaration => !declaration.property.startsWith('--'));
-			}
+				last[decl.prop] = decl;
+				if (decl.prop.startsWith('--')) {
+					decl.remove();
+				}
+			});
 		}
 
 		return result;
@@ -260,7 +170,7 @@ function classifyRules(rules) {
 	for (const rule of rules) {
 		const theme = extractTheme(rule);
 		if (theme) {
-			result[theme].push(...rule.declarations);
+			rule.walkDecls(decl => result[theme].push(decl));
 		} else {
 			rule.selectors = rule.selectors.some(s => /^(:root|html|body|\[data-color-mode])$/.test(s))
 				? ['.markdown-body']
@@ -277,38 +187,12 @@ function classifyRules(rules) {
 	return result;
 }
 
-const octicon = String.raw`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' version='1.1' aria-hidden='true'><path fill-rule='evenodd' d='M7.775 3.275a.75.75 0 001.06 1.06l1.25-1.25a2 2 0 112.83 2.83l-2.5 2.5a2 2 0 01-2.83 0 .75.75 0 00-1.06 1.06 3.5 3.5 0 004.95 0l2.5-2.5a3.5 3.5 0 00-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 010-2.83l2.5-2.5a2 2 0 012.83 0 .75.75 0 001.06-1.06 3.5 3.5 0 00-4.95 0l-2.5 2.5a3.5 3.5 0 004.95 4.95l1.25-1.25a.75.75 0 00-1.06-1.06l-1.25 1.25a2 2 0 01-2.83 0z'></path></svg>`;
-
-const manuallyAddedStyle = `
-.markdown-body .octicon {
-  display: inline-block;
-  fill: currentColor;
-  vertical-align: text-bottom;
-}
-
-.markdown-body h1:hover .anchor .octicon-link:before,
-.markdown-body h2:hover .anchor .octicon-link:before,
-.markdown-body h3:hover .anchor .octicon-link:before,
-.markdown-body h4:hover .anchor .octicon-link:before,
-.markdown-body h5:hover .anchor .octicon-link:before,
-.markdown-body h6:hover .anchor .octicon-link:before {
-  width: 16px;
-  height: 16px;
-  content: ' ';
-  display: inline-block;
-  background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,${octicon}");
-  mask-image: url("data:image/svg+xml,${octicon}");
-}
-`;
-
 function applyColors(colors, rules) {
 	for (const rule of rules) {
-		for (const declaration of rule.declarations) {
-			if (declaration.value.includes('var(')) {
-				declaration.value = declaration.value.replaceAll(/var\((.+?)\)/g, (match, name) => {
+		rule.walkDecls(decl => {
+			if (decl.value.includes('var(')) {
+				decl.value = decl.value.replaceAll(/var\((.+?)\)/g, (match, name) => {
 					name = name.split(',')[0];
-
 					if (name in colors) {
 						return colors[name];
 					}
@@ -316,43 +200,10 @@ function applyColors(colors, rules) {
 					return match;
 				});
 			}
-		}
+		});
 	}
 
 	return rules;
-}
-
-// Workaround for module 'css' does not understand new CSS syntaxes (@container, etc.)
-// Strip them as they are not used in the output anyway.
-function patchCSSText(cssText) {
-	function strip(mark, left = '{', right = '}') {
-		const ranges = [];
-
-		let i = -1;
-		while ((i = cssText.indexOf(mark, i + 1)) >= 0) {
-			let j = cssText.indexOf(left, i) + 1;
-			let depth = 1;
-			while (depth > 0) {
-				if (cssText[j] === left) {
-					depth++;
-				} else if (cssText[j] === right) {
-					depth--;
-				}
-
-				j++;
-			}
-
-			ranges.push([i, j]);
-		}
-
-		for (const [i, j] of ranges.reverse()) {
-			cssText = cssText.slice(0, i) + cssText.slice(j);
-		}
-	}
-
-	strip('@container');
-
-	return cssText;
 }
 
 /**
@@ -396,14 +247,13 @@ export default async function getCSS({
 		preserveVariables = true;
 	}
 
-	const body = await cachedGot('https://github.com');
+	const body = await cachedFetch('https://github.com');
 	// Get a list of all css links on the page
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
-	const contents = await Promise.all(links.map(url => cachedGot(url)));
+	const contents = await Promise.all(links.map(url => cachedFetch(url)));
 
-	const shared = [];
-	const colors = [];
 	let rules = [];
+	const colors = [];
 
 	for (const [url, cssText] of zip(links, contents)) {
 		// Get the name of a css file without the cache prevention number
@@ -413,131 +263,144 @@ export default async function getCSS({
 		}
 
 		const [name] = match;
-		const patched = patchCSSText(cssText);
-		const ast = css.parse(patched);
-
-		// Primer*.css contains styles and variables that apply to all themes
-		if (name.startsWith('primer')) {
-			extractColors(shared, name, ast);
-		}
-
-		// If it's a theme variable file extract colors, otherwise extract style
-		if (/^(light|dark)/.test(name)) {
-			extractColors(colors, name, ast);
+		const isTheme = /^(light|dark)/.test(name);
+		if (list) {
+			if (isTheme) {
+				colors.push(name);
+			}
+		} else if (isTheme) {
+			// If it's a theme variable file extract colors, otherwise extract style
+			extractVariables(colors, name, cssText);
 		} else {
-			extractStyles(rules, ast);
+			// Primer*.css contains styles and variables that apply to all themes
+			if (name.startsWith('primer')) {
+				extractVariables(colors, 'shared', cssText);
+			}
+
+			extractStyles(rules, cssText);
 		}
 	}
 
 	// If asked to list return the list of themes we've discovered
 	if (list) {
-		return colors.map(({name}) => name).join('\n');
+		return colors.join('\n');
 	}
 
-	rules = reverseUnique(rules, rule => {
-		const selector = rule.selectors.join(',');
-		const body = rule.declarations.map(({property, value}) => `${property}: ${value}`).join(';');
-		return `${selector}{${body}}`;
-	});
+	rules = reverseUnique(rules, rule => rule.toString());
 
-	({rules} = classifyRules(rules));
+	rules = classifyRules(rules).rules;
 
 	// Find all variables used across all styles
-	const usedVariables = new Set(rules.flatMap(rule => rule.declarations.flatMap(({value}) => {
-		const matches = [];
-		const re = /var\((?<name>[-\w]+?)[,)]/g;
-		let match = null;
-		do {
-			match = re.exec(value);
-			if (match) {
-				matches.push(match.groups.name);
+	const usedVariables = new Set();
+	for (const rule of rules) {
+		rule.walkDecls(({value}) => {
+			const re = /var\((?<name>[-\w]+?)[,)]/g;
+			let match = null;
+			do {
+				match = re.exec(value);
+				if (match) {
+					usedVariables.add(match.groups.name);
+				}
+			} while (match);
+		});
+	}
+
+	const colorSchemeLight = postcss.decl({prop: 'color-scheme', value: 'light'});
+	const colorSchemeDark = postcss.decl({prop: 'color-scheme', value: 'dark'});
+
+	const filterColors = (from, to = postcss.rule({selectors: ['.markdown-body']})) => {
+		for (const decl of from) {
+			if (usedVariables.has(decl.prop)) {
+				to.append(decl);
 			}
-		} while (match);
+		}
 
-		return matches;
-	})));
-
-	const colorSchemeLight = {type: 'declaration', property: 'color-scheme', value: 'light'};
-	const colorSchemeDark = {type: 'declaration', property: 'color-scheme', value: 'dark'};
-
-	const filterColors = (declarations, usedVariables) =>
-		declarations.filter(({property}) => usedVariables.has(property));
+		return to;
+	};
 
 	if (onlyVariables) {
 		rules = [];
 	}
 
 	if (!onlyStyles) {
-		const sharedDeclarations = filterColors(shared.flat(1), usedVariables);
+		const hoisted = filterColors(colors.shared);
 
 		if (light === dark) {
 			if (preserveVariables) {
-				rules.unshift({
-					type: 'rule',
+				const first = postcss.rule({
 					selectors: ['.markdown-body', `[data-theme="${light}"]`],
-					comment: light,
-					declarations: [
-						{type: 'comment', comment: light},
+					nodes: [
+						postcss.comment({text: light}),
 						light.startsWith('dark') ? colorSchemeDark : colorSchemeLight,
-						...filterColors(colors[light], usedVariables),
 					],
 				});
 
-				rules.unshift({
-					type: 'rule',
-					selectors: ['.markdown-body'],
-					declarations: sharedDeclarations,
-				});
+				filterColors(colors[light], first);
+
+				rules.unshift(first);
+				rules.unshift(hoisted);
 			} else {
 				rules = applyColors(colors[light], rules);
+				rules = applyColors(colors.shared, rules);
 
-				const sharedColors = Object.fromEntries(sharedDeclarations.map(({property, value}) => [property, value]));
-				rules = applyColors(sharedColors, rules);
+				rules[0].prepend(light.startsWith('dark') ? colorSchemeDark : colorSchemeLight);
 
-				if (light.startsWith('dark')) {
-					rules[0].declarations.unshift(colorSchemeDark);
-				}
-
-				rules.unshift({type: 'comment', comment: light});
+				rules.unshift(postcss.comment({text: light}));
 			}
 		} else {
-			rules.unshift({
-				type: 'media',
-				media: '(prefers-color-scheme: light)',
-				rules: [{
-					type: 'rule',
-					selectors: ['.markdown-body', `[data-theme="${light}"]`],
-					declarations: [
-						{type: 'comment', comment: light},
-						light.startsWith('dark') ? colorSchemeDark : colorSchemeLight,
-						...filterColors(colors[light], usedVariables),
-					],
-				}],
+			const firstLight = postcss.rule({
+				selectors: ['.markdown-body', `[data-theme="${light}"]`],
+				nodes: [
+					postcss.comment({text: light}),
+					light.startsWith('dark') ? colorSchemeDark : colorSchemeLight,
+				],
 			});
+			filterColors(colors[light], firstLight);
+			rules.unshift(postcss.atRule({
+				name: 'media',
+				params: '(prefers-color-scheme: light)',
+				nodes: [firstLight],
+			}));
 
-			rules.unshift({
-				type: 'media',
-				media: '(prefers-color-scheme: dark)',
-				rules: [{
-					type: 'rule',
-					selectors: ['.markdown-body', `[data-theme="${dark}"]`],
-					declarations: [
-						{type: 'comment', comment: dark},
-						dark.startsWith('light') ? colorSchemeLight : colorSchemeDark,
-						...filterColors(colors[dark], usedVariables),
-					],
-				}],
+			const firstDark = postcss.rule({
+				selectors: ['.markdown-body', `[data-theme="${dark}"]`],
+				nodes: [
+					postcss.comment({text: dark}),
+					dark.startsWith('light') ? colorSchemeLight : colorSchemeDark,
+				],
 			});
+			filterColors(colors[dark], firstDark);
+			rules.unshift(postcss.atRule({
+				name: 'media',
+				params: '(prefers-color-scheme: dark)',
+				nodes: [firstDark],
+			}));
 
-			rules.unshift({
-				type: 'rule',
-				selectors: ['.markdown-body'],
-				declarations: sharedDeclarations,
-			});
+			rules.unshift(hoisted);
 		}
 	}
 
-	let string = css.stringify({type: 'stylesheet', stylesheet: {rules}});
+	for (const rule of rules) {
+		rule.cleanRaws();
+	}
+
+	for (const rule of rules) {
+		if (rule.selector) {
+			rule.selector = rule.selectors.join(',\n');
+			rule.raws.semicolon = true;
+		}
+	}
+
+	let string = postcss.root({
+		nodes: rules,
+		raws: {
+			after: '\n',
+			indent: '  ',
+			semicolon: true,
+		},
+	}).toString();
+
+	string = string.replaceAll('}\n.markdown-body', '}\n\n.markdown-body');
 
 	if (!onlyVariables) {
 		const rootBegin = string.indexOf('\n.markdown-body {');
