@@ -26,6 +26,7 @@
 		"index.js",
 		"cli.js",
 		"utilities.js",
+		"constants.js",
 		"fixture.md"
 	],
 	"keywords": [
