@@ -39,9 +39,8 @@
 		"stylesheet"
 	],
 	"dependencies": {
-		"css": "^3.0.0",
-		"got": "^13.0.0",
-		"meow": "^12.1.1"
+		"meow": "^12.1.1",
+		"postcss": "^8.4.47"
 	},
 	"devDependencies": {
 		"xo": "^0.56.0"

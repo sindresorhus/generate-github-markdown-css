@@ -6,17 +6,9 @@ fs.mkdirSync('dist', {recursive: true});
 
 fs.writeFileSync('dist/auto.css', await githubMarkdownCss());
 
-const themes = [
-	'light',
-	'light_high_contrast',
-	'light_colorblind',
-	'light_tritanopia',
-	'dark',
-	'dark_high_contrast',
-	'dark_colorblind',
-	'dark_tritanopia',
-	'dark_dimmed',
-];
+const rawThemes = await githubMarkdownCss({list: true});
+
+const themes = rawThemes.split('\n');
 
 await Promise.all(themes.map(async theme => {
 	fs.writeFileSync(`dist/${theme}.css`, await githubMarkdownCss({light: theme, dark: theme}));

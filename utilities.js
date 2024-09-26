@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import got from 'got';
 
 export function zip(a, b) {
 	return a.map((element, index) => [element, b[index]]);
@@ -27,13 +26,13 @@ export function reverseUnique(array, by) {
 	return array.reverse();
 }
 
-export function findCacheDir() {
+function findCacheDir() {
 	const directory = 'node_modules/.cache/generate-github-markdown-css';
 	fs.mkdirSync(directory, {recursive: true});
 	return (...arguments_) => path.join(directory, ...arguments_);
 }
 
-export const cachePath = findCacheDir();
+const cachePath = findCacheDir();
 
 const ONE_DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
 
@@ -48,17 +47,21 @@ function isCached(filename, maxAge = ONE_DAY_IN_MILLISECONDS) {
 	return false;
 }
 
-export async function cachedGot(url) {
+export async function cachedFetch(url) {
 	const filename = cachePath(path.basename(url) + '.txt');
 
 	if (isCached(filename)) {
 		return fs.readFileSync(filename, 'utf8');
 	}
 
-	const {body} = await got(url);
-	fs.writeFileSync(filename, body);
+	const response = await fetch(url);
+	const body = await response.text();
+	if (response.ok) {
+		fs.writeFileSync(filename, body);
+		return body;
+	}
 
-	return body;
+	throw new Error(`Failed to fetch ${url}: ${body}`);
 }
 
 export async function renderMarkdown() {
@@ -69,15 +72,22 @@ export async function renderMarkdown() {
 	}
 
 	const text = fs.readFileSync(new URL('fixture.md', import.meta.url), 'utf8');
-	const {body} = await got.post('https://api.github.com/markdown', {
-		json: {text},
+
+	const response = await fetch('https://api.github.com/markdown', {
+		method: 'POST',
+		body: JSON.stringify({text}),
 		headers: {
 			Accept: 'application/vnd.github.v3+json',
 			'User-Agent': 'Node.js',
 		},
 	});
+	const body = await response.text();
 
-	fs.writeFileSync(filename, body);
+	if (response.ok) {
+		fs.writeFileSync(filename, body);
 
-	return body;
+		return body;
+	}
+
+	throw new Error(`Failed to render markdown: ${body}`);
 }
