@@ -1,8 +1,10 @@
 import postcss from 'postcss';
-import {cachedFetch, reverseUnique, unique, zip} from './utilities.js';
+import {cachedFetch, getUniqueClasses, renderMarkdown, reverseUnique, unique, zip} from './utilities.js';
 import {ALLOW_CLASS, ALLOW_TAGS, manuallyAddedStyle} from './constants.js';
 
-function extractStyles(rules, cssText) {
+function extractStyles(rules, cssText, {extraAllowableClasses = []} = {}) {
+	const allowableClassList = new Set([...ALLOW_CLASS, ...extraAllowableClasses]);
+
 	function select(selector) {
 		if (selector.startsWith('.markdown-body')) {
 			return true;
@@ -23,7 +25,7 @@ function extractStyles(rules, cssText) {
 			}
 
 			const klass = selector.match(/\.[-\w]+/);
-			if (klass && !ALLOW_CLASS.has(klass[0])) {
+			if (klass && !allowableClassList.has(klass[0])) {
 				return false;
 			}
 
@@ -32,7 +34,7 @@ function extractStyles(rules, cssText) {
 
 		const klass = selector.match(/^\.[-\w]+/);
 		if (klass) {
-			return ALLOW_CLASS.has(klass[0]);
+			return allowableClassList.has(klass[0]);
 		}
 
 		return false;
@@ -79,7 +81,7 @@ function extractStyles(rules, cssText) {
 			return;
 		}
 
-		if (rule.some(decl => decl.value.includes('prettylights'))) {
+		if (rule.some(node => node.type === 'decl' && node.value.includes('prettylights'))) {
 			if (!rule.selector.includes('.QueryBuilder')) {
 				rules.push(rule);
 			}
@@ -250,7 +252,11 @@ export default async function getCSS({
 	const body = await cachedFetch('https://github.com');
 	// Get a list of all css links on the page
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
-	const contents = await Promise.all(links.map(url => cachedFetch(url)));
+	const [fixtureHtml, ...contents] = await Promise.all([
+		renderMarkdown(),
+		...links.map(url => cachedFetch(url)),
+	]);
+	const fixtureClasses = getUniqueClasses(fixtureHtml);
 
 	let rules = [];
 	const colors = [];
@@ -277,7 +283,7 @@ export default async function getCSS({
 				extractVariables(colors, 'shared', cssText);
 			}
 
-			extractStyles(rules, cssText);
+			extractStyles(rules, cssText, {extraAllowableClasses: fixtureClasses});
 		}
 	}
 

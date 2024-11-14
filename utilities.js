@@ -75,7 +75,11 @@ export async function renderMarkdown() {
 
 	const response = await fetch('https://api.github.com/markdown', {
 		method: 'POST',
-		body: JSON.stringify({text}),
+		body: JSON.stringify({
+			text,
+			mode: 'gfm',
+			context: 'sindresorhus/generate-github-markdown-css',
+		}),
 		headers: {
 			Accept: 'application/vnd.github.v3+json',
 			'User-Agent': 'Node.js',
@@ -90,4 +94,10 @@ export async function renderMarkdown() {
 	}
 
 	throw new Error(`Failed to render markdown: ${body}`);
+}
+
+export function getUniqueClasses(html) {
+	const classNames = [...html.matchAll(/class\s*=\s*["']([^"']+)["']/g)]
+		.flatMap(match => match[1].split(/\s+/).map(c => `.${c}`));
+	return new Set(classNames);
 }
