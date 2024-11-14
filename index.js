@@ -137,6 +137,10 @@ function classifyRules(rules) {
 		return undefined;
 	}
 
+	function isEmpty(rule) {
+		return !rule.first;
+	}
+
 	function mergeRules(rules) {
 		const result = [];
 		const selectorIndexMap = {};
@@ -165,7 +169,7 @@ function classifyRules(rules) {
 			});
 		}
 
-		return result;
+		return result.filter(rule => !isEmpty(rule));
 	}
 
 	const result = {rules: [], light: [], dark: []};
