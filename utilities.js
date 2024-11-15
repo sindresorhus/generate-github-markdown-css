@@ -96,7 +96,7 @@ export async function renderMarkdown() {
 	throw new Error(`Failed to render markdown: ${body}`);
 }
 
-export function getUniqueClasses(html) {
+export function getUniqueClasses(html = '') {
 	const classNames = [...html.matchAll(/class\s*=\s*["']([^"']+)["']/g)]
 		.flatMap(match => match[1].split(/\s+/).map(c => `.${c}`));
 	return new Set(classNames);

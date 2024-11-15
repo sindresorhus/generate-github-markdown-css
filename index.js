@@ -239,6 +239,7 @@ export default async function getCSS({
 	onlyVariables = false,
 	onlyStyles = false,
 	rootSelector = '.markdown-body',
+	useFixture = true,
 } = {}) {
 	if (onlyVariables && onlyStyles) {
 		// Would result in an empty output
@@ -256,8 +257,9 @@ export default async function getCSS({
 	const body = await cachedFetch('https://github.com');
 	// Get a list of all css links on the page
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
+	const renderMarkdownPromise = useFixture ? renderMarkdown() : Promise.resolve();
 	const [fixtureHtml, ...contents] = await Promise.all([
-		renderMarkdown(),
+		renderMarkdownPromise,
 		...links.map(url => cachedFetch(url)),
 	]);
 	const fixtureClasses = getUniqueClasses(fixtureHtml);
