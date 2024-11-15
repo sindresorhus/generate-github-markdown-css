@@ -24,6 +24,7 @@ const cli = meow(
     --only-style           Only output the styles, forces --preserve-variables on
     --only-variables       Only output the variables for the specified themes
     --root-selector        Specify the root selector when outputting styles, default '.markdown-body'
+    --no-use-fixture       Exclude generated classes that come from GitHub Markdown API rendered fixture.md
 
   Examples
     $ github-markdown-css --list
@@ -74,6 +75,10 @@ const cli = meow(
 			rootSelector: {
 				type: 'string',
 			},
+			useFixture: {
+				type: 'boolean',
+				default: true,
+			},
 		},
 	},
 );
@@ -85,6 +90,7 @@ const {
 	onlyStyle,
 	onlyVariables,
 	rootSelector,
+	useFixture,
 } = cli.flags;
 
 let {light, dark} = cli.flags;
@@ -140,5 +146,6 @@ console.log(
 		onlyStyles: onlyStyle,
 		onlyVariables,
 		rootSelector,
+		useFixture,
 	}),
 );
