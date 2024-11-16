@@ -228,6 +228,7 @@ In "single" mode, the output will apply the values of all variables to the rules
 @param {boolean} [options.preserveVariables=false] - If `true`, will preserve the block of variables for a given theme even if only exporting one theme. By default, variables are applied to the rules themselves and the resulting CSS will not contain any `var(--variable)`.
 @param {boolean} [options.onlyVariables=false] - Only output the color variables part of the CSS. Forces `preserveVariables` to be `true`.
 @param {boolean} [options.onlyStyles=false] - Only output the style part of the CSS without any variables. Forces `preserveVariables` to be `true` and ignores the theme values. Useful to get the base styles to use multiple themes.
+@param {boolean} [options.useFixture=true] - Include extra styles from GitHub Flavored Markdown, like code snippets.
 @param {string} [options.rootSelector=.markdown-body] - Set the root selector of the rendered Markdown body as it should appear in the output CSS. Defaults to `.markdown-body`.
 */
 // eslint-disable-next-line complexity
@@ -238,8 +239,8 @@ export default async function getCSS({
 	preserveVariables = false,
 	onlyVariables = false,
 	onlyStyles = false,
-	rootSelector = '.markdown-body',
 	useFixture = true,
+	rootSelector = '.markdown-body',
 } = {}) {
 	if (onlyVariables && onlyStyles) {
 		// Would result in an empty output
@@ -254,7 +255,8 @@ export default async function getCSS({
 		preserveVariables = true;
 	}
 
-	const body = await cachedFetch('https://github.com');
+	// Note: Do not use the landing page (https://github.com/) to exclude styles on it
+	const body = await cachedFetch('https://github.com/sindresorhus/generate-github-markdown-css');
 	// Get a list of all css links on the page
 	const links = unique(body.match(/(?<=href=").+?\.css/g));
 	const renderMarkdownPromise = useFixture ? renderMarkdown() : Promise.resolve();
