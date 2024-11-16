@@ -23,8 +23,8 @@ const cli = meow(
                            and dark themes match or if type is not 'auto'
     --only-style           Only output the styles, forces --preserve-variables on
     --only-variables       Only output the variables for the specified themes
-    --root-selector        Specify the root selector when outputting styles, default '.markdown-body'
     --no-use-fixture       Exclude generated classes that come from GitHub Markdown API rendered fixture.md
+    --root-selector        Specify the root selector when outputting styles, default '.markdown-body'
 
   Examples
     $ github-markdown-css --list
