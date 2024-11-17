@@ -41,6 +41,8 @@ console.log(await githubMarkdownCss({
 		// `preserveVariables` to be `true` and ignores the theme values.
 		// Useful to get the base styles to use multiple themes.
 		onlyStyles: false,
+		// Include extra styles from GitHub Flavored Markdown, like code snippets.
+		useFixture: true,
 		// Set the root selector of the rendered Markdown body as it should appear
 		// in the output CSS. Defaults to `.markdown-body`.
 		rootSelector: '.markdown-body',
@@ -76,6 +78,7 @@ $ github-markdown-css --help
                            and dark themes match or if type is not 'auto'
     --only-style           Only output the styles, forces --preserve-variables on
     --only-variables       Only output the variables for the specified themes
+    --no-use-fixture       Exclude generated classes that come from GitHub Markdown API rendered fixture.md
     --root-selector        Specify the root selector when outputting styles, default '.markdown-body'
 
   Examples
