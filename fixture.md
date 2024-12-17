@@ -22,6 +22,10 @@
 > [!WARNING]
 > Critical content demanding immediate user attention due to potential risks.
 
+#### Color swatch
+
+GitHub Markdown API renders a color swatch when you write `#FFA22E` or `rgb(127, 255, 0)`.
+
 ### Code snippet
 
 https://github.com/sindresorhus/generate-github-markdown-css/blob/6d6a328dc9706d4e6f1bcc524ed1ad1b0448a3ea/index.js#L25-L28
