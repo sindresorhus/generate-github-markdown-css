@@ -75,6 +75,9 @@ const cli = meow(
 			rootSelector: {
 				type: 'string',
 			},
+			include: {
+				type: 'boolean',
+			},
 			useFixture: {
 				type: 'boolean',
 				default: true,
@@ -90,6 +93,7 @@ const {
 	onlyStyle,
 	onlyVariables,
 	rootSelector,
+	include,
 	useFixture,
 } = cli.flags;
 
@@ -146,6 +150,7 @@ console.log(
 		onlyStyles: onlyStyle,
 		onlyVariables,
 		rootSelector,
+		include,
 		useFixture,
 	}),
 );

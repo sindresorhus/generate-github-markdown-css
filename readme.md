@@ -80,6 +80,7 @@ $ github-markdown-css --help
     --only-variables       Only output the variables for the specified themes
     --no-use-fixture       Exclude generated classes that come from GitHub Markdown API rendered fixture.md
     --root-selector        Specify the root selector when outputting styles, default '.markdown-body'
+	--include              Prepends base styling and responsive padding
 
   Examples
     $ github-markdown-css --list

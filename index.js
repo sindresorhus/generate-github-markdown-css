@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import postcss from 'postcss';
 import {cachedFetch, getUniqueClasses, renderMarkdown, reverseUnique, unique, zip} from './utilities.js';
 import {ALLOW_CLASS, ALLOW_TAGS, manuallyAddedStyle} from './constants.js';
@@ -241,6 +242,7 @@ export default async function getCSS({
 	onlyStyles = false,
 	useFixture = true,
 	rootSelector = '.markdown-body',
+	include = false,
 } = {}) {
 	if (onlyVariables && onlyStyles) {
 		// Would result in an empty output
@@ -424,6 +426,16 @@ export default async function getCSS({
 
 	if (rootSelector !== '.markdown-body') {
 		string = string.replaceAll('.markdown-body', rootSelector);
+	}
+
+	if (include) {
+		try {
+			const includeCss = fs.readFileSync(new URL('include.css', import.meta.url), 'utf8');
+			const processedIncludeCss = includeCss.replaceAll('root_selector', rootSelector);
+			string = processedIncludeCss + string;
+		} catch {
+			// If include.css doesn't exist, continue without it
+		}
 	}
 
 	return string;

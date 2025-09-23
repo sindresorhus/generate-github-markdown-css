@@ -27,7 +27,8 @@
 		"cli.js",
 		"utilities.js",
 		"constants.js",
-		"fixture.md"
+		"fixture.md",
+		"include.css"
 	],
 	"keywords": [
 		"cli-app",
