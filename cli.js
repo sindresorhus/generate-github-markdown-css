@@ -9,22 +9,23 @@ const cli = meow(
     github-markdown-css > <filename>
 
   Options
-    --list                List available themes
+    --list                     List available themes
 
     Set theme:
-    --light               Light theme name from --list values
-    --dark                Dark theme name from --list values
-    --theme               Theme name: 'auto', light', 'dark', or another from --list values.
-                          'auto' means using the media query (prefers-color-scheme)
-                          to switch between the 'light' and 'dark' theme.
+    --light                    Light theme name from --list values
+    --dark                     Dark theme name from --list values
+    --theme                    Theme name: 'auto', light', 'dark', or another from --list values.
+                               'auto' means using the media query (prefers-color-scheme)
+                               to switch between the 'light' and 'dark' theme.
 
     Output options:
-    --preserve-variables   Preserve variables in the output. Only applies if light
-                           and dark themes match or if type is not 'auto'
-    --only-style           Only output the styles, forces --preserve-variables on
-    --only-variables       Only output the variables for the specified themes
-    --no-use-fixture       Exclude generated classes that come from GitHub Markdown API rendered fixture.md
-    --root-selector        Specify the root selector when outputting styles, default '.markdown-body'
+    --preserve-variables       Preserve variables in the output. Only applies if light
+                               and dark themes match or if type is not 'auto'
+    --only-style               Only output the styles, forces --preserve-variables on
+    --only-variables           Only output the variables for the specified themes
+    --no-use-fixture           Exclude generated classes that come from GitHub Markdown API rendered fixture.md
+    --root-selector            Specify the root selector when outputting styles, default '.markdown-body'
+    --transparent-background   Make the background transparent instead of white/black
 
   Examples
     $ github-markdown-css --list
@@ -79,6 +80,9 @@ const cli = meow(
 				type: 'boolean',
 				default: true,
 			},
+			transparentBackground: {
+				type: 'boolean',
+			},
 		},
 	},
 );
@@ -91,6 +95,7 @@ const {
 	onlyVariables,
 	rootSelector,
 	useFixture,
+	transparentBackground,
 } = cli.flags;
 
 let {light, dark} = cli.flags;
@@ -147,5 +152,6 @@ console.log(
 		onlyVariables,
 		rootSelector,
 		useFixture,
+		transparentBackground,
 	}),
 );

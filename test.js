@@ -1,4 +1,6 @@
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {test} from 'node:test';
 import {renderMarkdown} from './utilities.js';
 import githubMarkdownCss from './index.js';
 
@@ -87,3 +89,28 @@ ${fixture}
 `;
 
 fs.writeFileSync('dist/vars/index.html', htmlVars);
+
+test('transparentBackground - auto mode', async () => {
+	const css = await githubMarkdownCss({transparentBackground: true});
+	assert.ok(css.includes('--bgColor-default: transparent'), 'should set --bgColor-default to transparent in auto mode');
+});
+
+test('transparentBackground - single mode inlines transparent', async () => {
+	const css = await githubMarkdownCss({light: 'light', dark: 'light', transparentBackground: true});
+	assert.ok(css.includes('background-color: transparent'), 'should inline transparent as background-color');
+});
+
+test('transparentBackground - single mode with preserveVariables', async () => {
+	const css = await githubMarkdownCss({light: 'dark', dark: 'dark', transparentBackground: true, preserveVariables: true});
+	assert.ok(css.includes('--bgColor-default: transparent'), 'should set --bgColor-default to transparent');
+});
+
+test('transparentBackground - onlyVariables', async () => {
+	const css = await githubMarkdownCss({transparentBackground: true, onlyVariables: true});
+	assert.ok(css.includes('--bgColor-default: transparent'), 'should set --bgColor-default to transparent');
+});
+
+test('no transparentBackground by default', async () => {
+	const css = await githubMarkdownCss();
+	assert.ok(!css.includes('--bgColor-default: transparent'), 'should not have transparent background by default');
+});

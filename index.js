@@ -230,6 +230,7 @@ In "single" mode, the output will apply the values of all variables to the rules
 @param {boolean} [options.onlyStyles=false] - Only output the style part of the CSS without any variables. Forces `preserveVariables` to be `true` and ignores the theme values. Useful to get the base styles to use multiple themes.
 @param {boolean} [options.useFixture=true] - Include extra styles from GitHub Flavored Markdown, like code snippets.
 @param {string} [options.rootSelector=.markdown-body] - Set the root selector of the rendered Markdown body as it should appear in the output CSS. Defaults to `.markdown-body`.
+@param {boolean} [options.transparentBackground=false] - If `true`, the background color will be set to `transparent`. Useful when you want to embed the Markdown content in a page with a custom background color.
 */
 // eslint-disable-next-line complexity
 export default async function getCSS({
@@ -241,6 +242,7 @@ export default async function getCSS({
 	onlyStyles = false,
 	useFixture = true,
 	rootSelector = '.markdown-body',
+	transparentBackground = false,
 } = {}) {
 	if (onlyVariables && onlyStyles) {
 		// Would result in an empty output
@@ -298,6 +300,21 @@ export default async function getCSS({
 	// If asked to list return the list of themes we've discovered
 	if (list) {
 		return colors.join('\n');
+	}
+
+	if (transparentBackground) {
+		for (const theme of [colors[light], colors[dark], colors.shared]) {
+			if (!theme) {
+				continue;
+			}
+
+			const property = '--bgColor-default';
+			const index = theme.findIndex(declaration => declaration.prop === property);
+			if (index !== -1) {
+				theme[index].value = 'transparent';
+				theme[property] = 'transparent';
+			}
+		}
 	}
 
 	rules = reverseUnique(rules, rule => rule.toString());

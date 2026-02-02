@@ -46,6 +46,9 @@ console.log(await githubMarkdownCss({
 		// Set the root selector of the rendered Markdown body as it should appear
 		// in the output CSS. Defaults to `.markdown-body`.
 		rootSelector: '.markdown-body',
+		// Make the background transparent instead of white/black. Useful when
+		// embedding the Markdown content in a page with a custom background.
+		transparentBackground: false,
 	}
 ));
 //=> '.markdown-body { …'
@@ -64,22 +67,23 @@ $ github-markdown-css --help
     github-markdown-css > <filename>
 
   Options
-    --list                List available themes
+    --list                     List available themes
 
     Set theme:
-    --light               Light theme name from --list values
-    --dark                Dark theme name from --list values
-    --theme               Theme name: 'auto', light', 'dark', or another from --list values.
-                          'auto' means using the media query (prefers-color-scheme)
-                          to switch between the 'light' and 'dark' theme.
+    --light                    Light theme name from --list values
+    --dark                     Dark theme name from --list values
+    --theme                    Theme name: 'auto', light', 'dark', or another from --list values.
+                               'auto' means using the media query (prefers-color-scheme)
+                               to switch between the 'light' and 'dark' theme.
 
     Output options:
-    --preserve-variables   Preserve variables in the output. Only applies if light
-                           and dark themes match or if type is not 'auto'
-    --only-style           Only output the styles, forces --preserve-variables on
-    --only-variables       Only output the variables for the specified themes
-    --no-use-fixture       Exclude generated classes that come from GitHub Markdown API rendered fixture.md
-    --root-selector        Specify the root selector when outputting styles, default '.markdown-body'
+    --preserve-variables       Preserve variables in the output. Only applies if light
+                               and dark themes match or if type is not 'auto'
+    --only-style               Only output the styles, forces --preserve-variables on
+    --only-variables           Only output the variables for the specified themes
+    --no-use-fixture           Exclude generated classes that come from GitHub Markdown API rendered fixture.md
+    --root-selector            Specify the root selector when outputting styles, default '.markdown-body'
+    --transparent-background   Make the background transparent instead of white/black
 
   Examples
     $ github-markdown-css --list
