@@ -110,6 +110,22 @@ test('transparentBackground - onlyVariables', async () => {
 	assert.ok(css.includes('--bgColor-default: transparent'), 'should set --bgColor-default to transparent');
 });
 
+test('link underline styles are included', async () => {
+	const css = await githubMarkdownCss();
+	assert.ok(css.includes('.markdown-body a {\n  text-decoration: underline;'), 'should include link underline styles');
+	assert.ok(css.includes('text-underline-offset'), 'should include underline offset');
+});
+
+test('link underline styles in onlyStyles mode', async () => {
+	const css = await githubMarkdownCss({onlyStyles: true});
+	assert.ok(css.includes('.markdown-body a {\n  text-decoration: underline;'), 'should include link underline styles in onlyStyles mode');
+});
+
+test('no link underline styles in onlyVariables mode', async () => {
+	const css = await githubMarkdownCss({onlyVariables: true});
+	assert.ok(!css.includes('text-underline-offset'), 'should not include link styles in onlyVariables mode');
+});
+
 test('no transparentBackground by default', async () => {
 	const css = await githubMarkdownCss();
 	assert.ok(!css.includes('--bgColor-default: transparent'), 'should not have transparent background by default');
